@@ -221,4 +221,63 @@ describe('Canvas', () => {
     const empty = document.querySelector('.canvas-empty');
     expect(empty).toBeNull();
   });
+
+  // ----------------------------------------------------------------
+  // Canvas item color rendering
+  // ----------------------------------------------------------------
+  it('renders item with custom fill color as backgroundColor', () => {
+    const { addLayer, addItem } = useDocumentStore.getState();
+    const layer = addLayer('Color Layer');
+    addItem(layer.id, {
+      name: 'Red Item',
+      type: 'shape',
+      x: 0,
+      y: 0,
+      width: 100,
+      height: 80,
+      rotation: 0,
+      fill: '#ff0000',
+      data: {},
+    } as any);
+    useSelectionStore.getState().selectLayer(layer.id);
+
+    const { container } = render(<Canvas />);
+    const itemEl = container.querySelector('.canvas-item') as HTMLElement;
+    expect(itemEl).toBeTruthy();
+    expect(itemEl.style.backgroundColor).toBe('rgb(255, 0, 0)');
+  });
+
+  it('renders item with stroke color as border', () => {
+    const { addLayer, addItem } = useDocumentStore.getState();
+    const layer = addLayer('Stroke Layer');
+    addItem(layer.id, {
+      name: 'Stroked Item',
+      type: 'shape',
+      x: 0,
+      y: 0,
+      width: 100,
+      height: 80,
+      rotation: 0,
+      stroke: '#00ff00',
+      data: {},
+    } as any);
+    useSelectionStore.getState().selectLayer(layer.id);
+
+    const { container } = render(<Canvas />);
+    const itemEl = container.querySelector('.canvas-item') as HTMLElement;
+    expect(itemEl).toBeTruthy();
+    expect(itemEl.style.border).toBe('2px solid rgb(0, 255, 0)');
+    expect(itemEl.classList.contains('canvas-item--has-stroke')).toBe(true);
+  });
+
+  it('renders item without fill/stroke using default styling', () => {
+    addLayerWithItem();
+    const { container } = render(<Canvas />);
+    const itemEl = container.querySelector('.canvas-item') as HTMLElement;
+    expect(itemEl).toBeTruthy();
+    // Default fill should be #2a2a38
+    expect(itemEl.style.backgroundColor).toBe('rgb(42, 42, 56)');
+    // No stroke class
+    expect(itemEl.classList.contains('canvas-item--has-stroke')).toBe(false);
+  });
 });

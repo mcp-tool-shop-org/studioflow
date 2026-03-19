@@ -22,6 +22,7 @@ function makeDefaultItem(layerId: string) {
       width: 128,
       height: 96,
       rotation: 0,
+      fill: '#2a2a38',
       data: {},
     },
   };
@@ -364,6 +365,10 @@ export default function Canvas() {
               const isSelected = selectedItemIds.includes(item.id);
               const isLocked = layer.locked;
 
+              // Access optional fill/stroke color properties
+              const itemAny = item as typeof item & { fill?: string; stroke?: string };
+              const hasStroke = !!itemAny.stroke;
+
               return (
                 <div
                   key={item.id}
@@ -371,6 +376,7 @@ export default function Canvas() {
                     'canvas-item',
                     isSelected ? 'canvas-item--selected' : '',
                     isLocked ? 'canvas-item--locked' : '',
+                    hasStroke ? 'canvas-item--has-stroke' : '',
                   ].filter(Boolean).join(' ')}
                   style={{
                     left: item.x,
@@ -378,6 +384,8 @@ export default function Canvas() {
                     width: item.width,
                     height: item.height,
                     transform: item.rotation ? `rotate(${item.rotation}deg)` : undefined,
+                    backgroundColor: itemAny.fill || '#2a2a38',
+                    border: hasStroke ? `2px solid ${itemAny.stroke}` : undefined,
                   }}
                   onClick={(e) => handleItemClick(e, item.id, isLocked)}
                   onMouseDown={(e) =>
