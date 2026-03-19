@@ -34,6 +34,8 @@ export const UNDOABLE_COMMANDS: readonly CommandType[] = [
   'item:resize',
   'item:delete',
   'item:update',
+  'item:set-fill',
+  'item:set-stroke',
 ] as const;
 
 /** Command types that are NOT undoable (persistence, project lifecycle) */
@@ -58,6 +60,8 @@ export const COMMAND_LABELS: Record<CommandType, string> = {
   'item:resize': 'Resize Item',
   'item:delete': 'Delete Item',
   'item:update': 'Update Item',
+  'item:set-fill': 'Set Fill Color',
+  'item:set-stroke': 'Set Stroke Color',
   'project:new': 'New Project',
   'project:save': 'Save Project',
   'project:save-as': 'Save Project As',

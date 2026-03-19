@@ -144,6 +144,40 @@ describe('documentStore — items', () => {
     expect(item.y).toBe(99);
   });
 
+  it('fill and stroke are optional (backwards compatibility)', () => {
+    useDocumentStore.getState().addLayer();
+    useDocumentStore.getState().addItem('layer-1', baseItem());
+    const item = useDocumentStore.getState().layers[0].items[0];
+    expect(item.fill).toBeUndefined();
+    expect(item.stroke).toBeUndefined();
+  });
+
+  it('setItemFill sets the fill color on an item', () => {
+    useDocumentStore.getState().addLayer();
+    useDocumentStore.getState().addItem('layer-1', baseItem());
+    useDocumentStore.getState().setItemFill('layer-1', 'item-1', '#ff0000');
+    const item = useDocumentStore.getState().layers[0].items[0];
+    expect(item.fill).toBe('#ff0000');
+  });
+
+  it('setItemStroke sets the stroke color on an item', () => {
+    useDocumentStore.getState().addLayer();
+    useDocumentStore.getState().addItem('layer-1', baseItem());
+    useDocumentStore.getState().setItemStroke('layer-1', 'item-1', '#00ff00');
+    const item = useDocumentStore.getState().layers[0].items[0];
+    expect(item.stroke).toBe('#00ff00');
+  });
+
+  it('setItemFill does not affect other items', () => {
+    useDocumentStore.getState().addLayer();
+    useDocumentStore.getState().addItem('layer-1', baseItem());
+    useDocumentStore.getState().addItem('layer-1', baseItem());
+    useDocumentStore.getState().setItemFill('layer-1', 'item-1', '#ff0000');
+    const items = useDocumentStore.getState().layers[0].items;
+    expect(items[0].fill).toBe('#ff0000');
+    expect(items[1].fill).toBeUndefined();
+  });
+
   it('setProject stores the project', () => {
     const project = {
       id: 'proj-1',

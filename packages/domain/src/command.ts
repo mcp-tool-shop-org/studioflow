@@ -10,6 +10,8 @@ export type CommandType =
   | 'item:resize'
   | 'item:delete'
   | 'item:update'
+  | 'item:set-fill'
+  | 'item:set-stroke'
   | 'project:new'
   | 'project:save'
   | 'project:save-as'

@@ -1,3 +1,5 @@
+import type { ColorValue } from './color.js';
+
 export type LayerItemType = 'shape' | 'text' | 'image' | 'group';
 
 export interface LayerItem {
@@ -10,6 +12,8 @@ export interface LayerItem {
   height: number;
   rotation: number;
   data: Record<string, unknown>;
+  fill?: ColorValue;
+  stroke?: ColorValue;
 }
 
 export interface Layer {

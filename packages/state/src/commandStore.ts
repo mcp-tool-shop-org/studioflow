@@ -147,6 +147,24 @@ function executeCommand(
         return { success: true };
       }
 
+      case 'item:set-fill': {
+        const { layerId, itemId, color } = payload;
+        if (typeof layerId !== 'string' || typeof itemId !== 'string' || typeof color !== 'string') {
+          return { success: false, error: 'item:set-fill requires layerId, itemId, and color strings' };
+        }
+        doc.setItemFill(layerId, itemId, color);
+        return { success: true };
+      }
+
+      case 'item:set-stroke': {
+        const { layerId, itemId, color } = payload;
+        if (typeof layerId !== 'string' || typeof itemId !== 'string' || typeof color !== 'string') {
+          return { success: false, error: 'item:set-stroke requires layerId, itemId, and color strings' };
+        }
+        doc.setItemStroke(layerId, itemId, color);
+        return { success: true };
+      }
+
       // Persistence commands — routed through command system but handled by persistenceStore
       case 'project:new':
       case 'project:save':

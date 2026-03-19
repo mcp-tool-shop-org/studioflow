@@ -23,6 +23,8 @@ export interface DocumentState {
   removeItem: (layerId: string, itemId: string) => void;
   updateItem: (layerId: string, itemId: string, patch: Partial<Omit<LayerItem, 'id'>>) => void;
   moveItem: (layerId: string, itemId: string, x: number, y: number) => void;
+  setItemFill: (layerId: string, itemId: string, color: string) => void;
+  setItemStroke: (layerId: string, itemId: string, color: string) => void;
 
   // Reset
   reset: () => void;
@@ -137,6 +139,34 @@ export const useDocumentStore = create<DocumentState>()((set, get) => ({
               ...l,
               items: l.items.map((i) =>
                 i.id === itemId ? { ...i, x, y } : i,
+              ),
+            }
+          : l,
+      ),
+    })),
+
+  setItemFill: (layerId, itemId, color) =>
+    set((state) => ({
+      layers: state.layers.map((l) =>
+        l.id === layerId
+          ? {
+              ...l,
+              items: l.items.map((i) =>
+                i.id === itemId ? { ...i, fill: color } : i,
+              ),
+            }
+          : l,
+      ),
+    })),
+
+  setItemStroke: (layerId, itemId, color) =>
+    set((state) => ({
+      layers: state.layers.map((l) =>
+        l.id === layerId
+          ? {
+              ...l,
+              items: l.items.map((i) =>
+                i.id === itemId ? { ...i, stroke: color } : i,
               ),
             }
           : l,

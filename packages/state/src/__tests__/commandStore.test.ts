@@ -2,11 +2,13 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { useCommandStore } from '../commandStore.js';
 import { useDocumentStore } from '../documentStore.js';
 import { useSelectionStore } from '../selectionStore.js';
+import { useHistoryStore } from '../historyStore.js';
 
 beforeEach(() => {
   useCommandStore.getState().reset();
   useDocumentStore.getState().reset();
   useSelectionStore.getState().reset();
+  useHistoryStore.getState().reset();
 });
 
 describe('commandStore — dispatch', () => {
@@ -123,6 +125,40 @@ describe('commandStore — dispatch', () => {
     expect(updated.width).toBe(999);
   });
 
+  it('item:set-fill sets fill color via command', () => {
+    useCommandStore.getState().dispatch('layer:create', {});
+    const layerId = useDocumentStore.getState().layers[0].id;
+    const item = { name: 'Box', type: 'shape', x: 0, y: 0, width: 10, height: 10, rotation: 0, data: {} };
+    useCommandStore.getState().dispatch('item:add', { layerId, item });
+    const itemId = useDocumentStore.getState().layers[0].items[0].id;
+    const result = useCommandStore.getState().dispatch('item:set-fill', { layerId, itemId, color: '#ff0000' });
+    expect(result.success).toBe(true);
+    expect(useDocumentStore.getState().layers[0].items[0].fill).toBe('#ff0000');
+  });
+
+  it('item:set-stroke sets stroke color via command', () => {
+    useCommandStore.getState().dispatch('layer:create', {});
+    const layerId = useDocumentStore.getState().layers[0].id;
+    const item = { name: 'Box', type: 'shape', x: 0, y: 0, width: 10, height: 10, rotation: 0, data: {} };
+    useCommandStore.getState().dispatch('item:add', { layerId, item });
+    const itemId = useDocumentStore.getState().layers[0].items[0].id;
+    const result = useCommandStore.getState().dispatch('item:set-stroke', { layerId, itemId, color: '#00ff00' });
+    expect(result.success).toBe(true);
+    expect(useDocumentStore.getState().layers[0].items[0].stroke).toBe('#00ff00');
+  });
+
+  it('item:set-fill returns error for invalid payload', () => {
+    const result = useCommandStore.getState().dispatch('item:set-fill', { layerId: 'x' });
+    expect(result.success).toBe(false);
+    expect(result.error).toBeDefined();
+  });
+
+  it('item:set-stroke returns error for invalid payload', () => {
+    const result = useCommandStore.getState().dispatch('item:set-stroke', { layerId: 'x', itemId: 'y' });
+    expect(result.success).toBe(false);
+    expect(result.error).toBeDefined();
+  });
+
   it('clearHistory resets history and lastResult', () => {
     useCommandStore.getState().dispatch('layer:create', {});
     useCommandStore.getState().clearHistory();
@@ -135,5 +171,54 @@ describe('commandStore — dispatch', () => {
     useCommandStore.getState().dispatch('layer:create', {});
     const ids = useCommandStore.getState().history.map((c) => c.id);
     expect(new Set(ids).size).toBe(2);
+  });
+});
+
+describe('commandStore — color undo/redo', () => {
+  const setupItemWithFill = () => {
+    useCommandStore.getState().dispatch('layer:create', {});
+    const layerId = useDocumentStore.getState().layers[0].id;
+    const item = { name: 'Box', type: 'shape', x: 0, y: 0, width: 10, height: 10, rotation: 0, data: {} };
+    useCommandStore.getState().dispatch('item:add', { layerId, item });
+    const itemId = useDocumentStore.getState().layers[0].items[0].id;
+    return { layerId, itemId };
+  };
+
+  it('undo reverts item:set-fill', () => {
+    const { layerId, itemId } = setupItemWithFill();
+    useCommandStore.getState().dispatch('item:set-fill', { layerId, itemId, color: '#ff0000' });
+    expect(useDocumentStore.getState().layers[0].items[0].fill).toBe('#ff0000');
+
+    useHistoryStore.getState().undo();
+    expect(useDocumentStore.getState().layers[0].items[0].fill).toBeUndefined();
+  });
+
+  it('redo re-applies item:set-fill', () => {
+    const { layerId, itemId } = setupItemWithFill();
+    useCommandStore.getState().dispatch('item:set-fill', { layerId, itemId, color: '#ff0000' });
+
+    useHistoryStore.getState().undo();
+    expect(useDocumentStore.getState().layers[0].items[0].fill).toBeUndefined();
+
+    useHistoryStore.getState().redo();
+    expect(useDocumentStore.getState().layers[0].items[0].fill).toBe('#ff0000');
+  });
+
+  it('undo reverts item:set-stroke', () => {
+    const { layerId, itemId } = setupItemWithFill();
+    useCommandStore.getState().dispatch('item:set-stroke', { layerId, itemId, color: '#00ff00' });
+    expect(useDocumentStore.getState().layers[0].items[0].stroke).toBe('#00ff00');
+
+    useHistoryStore.getState().undo();
+    expect(useDocumentStore.getState().layers[0].items[0].stroke).toBeUndefined();
+  });
+
+  it('redo re-applies item:set-stroke', () => {
+    const { layerId, itemId } = setupItemWithFill();
+    useCommandStore.getState().dispatch('item:set-stroke', { layerId, itemId, color: '#00ff00' });
+
+    useHistoryStore.getState().undo();
+    useHistoryStore.getState().redo();
+    expect(useDocumentStore.getState().layers[0].items[0].stroke).toBe('#00ff00');
   });
 });
