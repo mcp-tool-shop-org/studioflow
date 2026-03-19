@@ -1,0 +1,8 @@
+{
+  "$schema": "https://raw.githubusercontent.com/nicholasday/schemas/main/tauri.json",
+  "productName": "StudioFlow",
+  "identifier": "com.studioflow.app",
+  "build": { "frontendDist": "../dist", "devUrl": "http://localhost:1420", "beforeDevCommand": "pnpm dev", "beforeBuildCommand": "pnpm build" },
+  "app": { "windows": [{ "title": "StudioFlow", "width": 1280, "height": 800 }], "security": { "csp": null } },
+  "bundle": { "active": true, "targets": "all", "icon": ["icons/icon.ico"] }
+}
