@@ -297,4 +297,110 @@ describe('Inspector', () => {
       expect(copy.y).toBe(originals[idx].y + 20);
     });
   });
+
+  // 14 — Color pickers appear when a single item is selected
+  it('shows fill and stroke color pickers when a single item is selected', () => {
+    const { layerId, itemIds } = setupLayerWithItems(1);
+    act(() => {
+      useSelectionStore.getState().selectLayer(layerId);
+      useSelectionStore.getState().selectItem(itemIds[0]);
+    });
+    render(<Inspector />);
+    expect(screen.getByLabelText('Fill color')).toBeTruthy();
+    expect(screen.getByLabelText('Stroke color')).toBeTruthy();
+    expect(screen.getByText('Colors')).toBeTruthy();
+  });
+
+  // 15 — Changing fill color dispatches item:update command
+  it('dispatches item:update with fill when fill color is changed', () => {
+    const { layerId, itemIds } = setupLayerWithItems(1);
+    act(() => {
+      useSelectionStore.getState().selectLayer(layerId);
+      useSelectionStore.getState().selectItem(itemIds[0]);
+    });
+    render(<Inspector />);
+
+    const fillInput = screen.getByLabelText('Fill color') as HTMLInputElement;
+    act(() => {
+      fireEvent.change(fillInput, { target: { value: '#ff0000' } });
+    });
+
+    const layer = useDocumentStore.getState().layers.find((l) => l.id === layerId);
+    const item = layer?.items.find((i) => i.id === itemIds[0]);
+    expect(item?.data.fill).toBe('#ff0000');
+  });
+
+  // 16 — Multi-select with different fills shows "mixed"
+  it('shows "mixed" indicator when multi-selected items have different fills', () => {
+    const layer = useDocumentStore.getState().addLayer('Color Layer');
+    const item1 = useDocumentStore.getState().addItem(layer.id, {
+      name: 'Red',
+      type: 'shape',
+      x: 0,
+      y: 0,
+      width: 50,
+      height: 50,
+      rotation: 0,
+      data: { fill: '#ff0000' },
+    });
+    const item2 = useDocumentStore.getState().addItem(layer.id, {
+      name: 'Blue',
+      type: 'shape',
+      x: 100,
+      y: 0,
+      width: 50,
+      height: 50,
+      rotation: 0,
+      data: { fill: '#0000ff' },
+    });
+    act(() => {
+      useSelectionStore.getState().selectLayer(layer.id);
+      useSelectionStore.getState().selectItems([item1!.id, item2!.id]);
+    });
+    render(<Inspector />);
+    // Should show "mixed" for the fill color picker
+    const mixedIndicators = screen.getAllByText('mixed');
+    expect(mixedIndicators.length).toBeGreaterThanOrEqual(1);
+  });
+
+  // 17 — Multi-select color change dispatches commands for all items
+  it('dispatches item:update for all selected items when fill color is changed in multi-select', () => {
+    const layer = useDocumentStore.getState().addLayer('Batch Layer');
+    const item1 = useDocumentStore.getState().addItem(layer.id, {
+      name: 'A',
+      type: 'shape',
+      x: 0,
+      y: 0,
+      width: 50,
+      height: 50,
+      rotation: 0,
+      data: { fill: '#ff0000' },
+    });
+    const item2 = useDocumentStore.getState().addItem(layer.id, {
+      name: 'B',
+      type: 'shape',
+      x: 100,
+      y: 0,
+      width: 50,
+      height: 50,
+      rotation: 0,
+      data: { fill: '#0000ff' },
+    });
+    act(() => {
+      useSelectionStore.getState().selectLayer(layer.id);
+      useSelectionStore.getState().selectItems([item1!.id, item2!.id]);
+    });
+    render(<Inspector />);
+
+    // There are two fill color inputs (fill + stroke per section); get the first fill one
+    const fillInputs = screen.getAllByLabelText('Fill color');
+    act(() => {
+      fireEvent.change(fillInputs[0], { target: { value: '#00ff00' } });
+    });
+
+    const updatedLayer = useDocumentStore.getState().layers.find((l) => l.id === layer.id);
+    updatedLayer?.items.forEach((item) => {
+      expect(item.data.fill).toBe('#00ff00');
+    });
+  });
 });
