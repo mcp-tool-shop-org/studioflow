@@ -4,3 +4,5 @@ export * from './command.js';
 export * from './workspace.js';
 export * from './persistence.js';
 export * from './history.js';
+export * from './viewport.js';
+export * from './selection.js';

@@ -1,0 +1,25 @@
+{
+  "writeback": {
+    "module": "packages/state/src",
+    "change_type": "feature",
+    "summary": "Upgraded selectionStore from single-target to set-based multi-selection with replace/add/toggle modes, marquee selectByRect, selectAll, invertSelection, and getSelectionBounds; all original APIs remain backward-compatible.",
+    "files_touched": [
+      "packages/domain/src/selection.ts",
+      "packages/state/src/selectionStore.ts",
+      "packages/state/src/__tests__/selectionStore.test.ts"
+    ],
+    "contract_delta": "none",
+    "risks": "getSelectionBounds reads from documentStore at call time — if document resets between selection and bounds calculation, bounds may be null unexpectedly. Cross-package relative import (../../domain/src/selection.js) bypasses the @studioflow/domain barrel; if domain package restructures, this import must be updated.",
+    "dependencies_affected": [],
+    "tests_added": ["packages/state/src/__tests__/selectionStore.test.ts"],
+    "docs_required": false,
+    "architecture_impact": null,
+    "relationship_suggestions": [],
+    "prose": {
+      "what_changed": "Created packages/domain/src/selection.ts with SelectionMode, SelectionRect, and SelectionBounds types. Extended selectionStore.ts with five new actions: selectWithMode (replace/add/toggle semantics), selectByRect (AABB marquee selection from caller-supplied item list), getSelectionBounds (union bounding box from documentStore), selectAll (select every item on a layer), and invertSelection (toggle all items on a layer). All nine original actions and their behavior are preserved unchanged.",
+      "why_changed": "Single-target selection is insufficient for multi-object editing workflows. Set-based semantics enable compound operations (duplicate, delete, nudge) to act on a group of items and record a single history entry. Marquee selection and inversion are standard canvas editor affordances required by the roadmap.",
+      "what_to_watch": "selectByRect relies on caller-supplied geometry rather than reading documentStore directly — the Canvas must pass the current visible item list. getSelectionBounds is a derived getter (not reactive state), so components that need live bounds must subscribe via a computed selector. invertSelection only affects items on the specified layer; items selected on other layers are preserved.",
+      "what_affects_next": "Canvas.tsx needs to wire selectByRect to pointer-drag events and pass item geometry. Inspector.tsx can use getSelectionBounds to position overlay handles. commandStore operations (duplicate/delete/nudge) should read selectedItemIds as a set and wrap changes in a single history batch. The SelectionMode type is ready to be re-exported from packages/domain/src/index.ts once the index is updated."
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "files_created": [
+    "packages/domain/src/viewport.ts",
+    "packages/state/src/viewportStore.ts"
+  ],
+  "files_modified": [],
+  "files_deleted": [],
+  "test_files": [
+    "packages/state/src/__tests__/viewportStore.test.ts"
+  ]
+}

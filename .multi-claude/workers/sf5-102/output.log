@@ -1,0 +1,21 @@
+All tasks complete. Here's a summary of what was built:
+
+## SF5-102 — Multi-Selection Law ✅
+
+**22/22 tests passing** (9 original + 13 new)
+
+### Files created/modified:
+
+1. **`packages/domain/src/selection.ts`** *(new)* — Defines three domain types:
+   - `SelectionMode`: `'replace' | 'add' | 'toggle'`
+   - `SelectionRect`: `{ x, y, width, height }` for marquee selection
+   - `SelectionBounds`: `{ minX, minY, maxX, maxY }` computed union bounds
+
+2. **`packages/state/src/selectionStore.ts`** *(modified)* — Extended with 5 new actions while keeping all 5 original actions backward-compatible:
+   - `selectWithMode(itemId, mode)` — replace/add/toggle semantics
+   - `selectByRect(rect, items)` — AABB overlap test for marquee selection
+   - `getSelectionBounds()` — union bounding box from documentStore (returns null if nothing selected)
+   - `selectAll(layerId)` — select every item on a layer
+   - `invertSelection(layerId)` — toggle all items on a layer (preserves selections on other layers)
+
+3. **`packages/state/src/__tests__/selectionStore.test.ts`** *(modified)* — Added 13 new tests covering all new APIs and explicit backward-compat checks.

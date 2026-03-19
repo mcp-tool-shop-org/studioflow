@@ -17,3 +17,6 @@ export { initDirtyTracker, resetDirtyTracker } from './dirtyTracker.js';
 
 export { useHistoryStore } from './historyStore.js';
 export type { HistoryStoreState } from './historyStore.js';
+
+export { useViewportStore } from './viewportStore.js';
+export type { ViewportStoreState } from './viewportStore.js';

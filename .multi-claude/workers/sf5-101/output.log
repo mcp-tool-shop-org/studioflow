@@ -1,0 +1,25 @@
+Build packet SF5-101 complete. Here's a summary of what was done:
+
+## SF5-101 — Viewport Law ✅
+
+**All 18 tests pass.**
+
+### Files Created
+
+1. **`packages/domain/src/viewport.ts`** — Domain types and constants:
+   - `ViewportState` interface (`zoom`, `panX`, `panY`)
+   - `ViewportAction` union type (5 action strings)
+   - `ContentBounds` interface for `fitToCanvas`
+   - Constants: `ZOOM_STEP=0.1`, `MIN_ZOOM=0.1`, `MAX_ZOOM=5.0`, `DEFAULT_ZOOM=1.0`
+
+2. **`packages/state/src/viewportStore.ts`** — Zustand store with:
+   - `zoomIn()` / `zoomOut()` — increment/decrement by `ZOOM_STEP`, clamped
+   - `zoomTo(level)` — set to arbitrary level, clamped
+   - `zoomReset()` — back to `DEFAULT_ZOOM=1.0`
+   - `panTo(x, y)` / `panBy(dx, dy)` — absolute and relative pan
+   - `fitToCanvas(w, h, bounds)` — scale-to-fit with centering, ignores zero-area bounds
+   - `reset()` — restores initial state
+
+3. **`packages/state/src/__tests__/viewportStore.test.ts`** — 18 tests covering initial state, all actions, zoom clamping, step arithmetic, and reset.
+
+**Key design decision:** Since `packages/domain/src/index.ts` is forbidden from modification, both `viewportStore.ts` and the test file import directly from the relative path to `viewport.ts`.

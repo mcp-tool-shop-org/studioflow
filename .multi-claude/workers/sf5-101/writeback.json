@@ -1,0 +1,27 @@
+{
+  "writeback": {
+    "module": "packages/state/src",
+    "change_type": "feature",
+    "summary": "Added viewport state management with zoom/pan store and domain types for session-only workspace state",
+    "files_touched": [
+      "packages/domain/src/viewport.ts",
+      "packages/state/src/viewportStore.ts",
+      "packages/state/src/__tests__/viewportStore.test.ts"
+    ],
+    "contract_delta": "none",
+    "risks": "Viewport store is session-only and not persisted; consumers must not attempt to serialize it to project files. Floating-point rounding in zoom arithmetic is handled via toFixed(10) to avoid precision drift over many zoom steps.",
+    "dependencies_affected": [],
+    "tests_added": [
+      "packages/state/src/__tests__/viewportStore.test.ts"
+    ],
+    "docs_required": false,
+    "architecture_impact": null,
+    "relationship_suggestions": [],
+    "prose": {
+      "what_changed": "Created ViewportState interface and ViewportAction type in packages/domain/src/viewport.ts with constants ZOOM_STEP=0.1, MIN_ZOOM=0.1, MAX_ZOOM=5.0, DEFAULT_ZOOM=1.0. Created Zustand viewportStore with zoomIn, zoomOut, zoomTo, zoomReset, panTo, panBy, fitToCanvas, and reset actions. All zoom mutations clamp to [MIN_ZOOM, MAX_ZOOM]. fitToCanvas computes scale-to-fit zoom and centers content. Added 18 tests covering all actions, clamping, arithmetic, and reset.",
+      "why_changed": "Viewport state (zoom, pan) is workspace-level context required for canvas rendering but must remain separate from document content — it is not part of project history and must not be persisted in project files.",
+      "what_to_watch": "Floating-point accumulation when calling zoomIn/zoomOut many times; currently mitigated by toFixed(10) rounding. fitToCanvas does nothing on zero-dimension content bounds to avoid division-by-zero.",
+      "what_affects_next": "Canvas components that consume viewportStore will need to apply zoom/pan as CSS transforms or canvas context transforms. Any toolbar zoom controls should call zoomIn/zoomOut/zoomReset from useViewportStore."
+    }
+  }
+}

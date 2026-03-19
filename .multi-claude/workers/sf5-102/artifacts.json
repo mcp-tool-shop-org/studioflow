@@ -1,0 +1,9 @@
+{
+  "files_created": ["packages/domain/src/selection.ts"],
+  "files_modified": [
+    "packages/state/src/selectionStore.ts",
+    "packages/state/src/__tests__/selectionStore.test.ts"
+  ],
+  "files_deleted": [],
+  "test_files": ["packages/state/src/__tests__/selectionStore.test.ts"]
+}
