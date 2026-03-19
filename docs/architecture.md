@@ -539,29 +539,123 @@ The key is that `recordBeforeCommand()` is called **before** the command execute
 
 ---
 
-## 11. What Is Not Built Yet
+## 11. Layered Editing Workspace (Phase 4)
+
+The editing workspace is the core of the application, enabling users to organize and manipulate content through layers and items.
+
+### Layer System
+
+Layers are ordered, named containers for items. Full layer lifecycle is handled through commands:
+
+- **Create** — `layer:create` command generates a new layer with a default name and adds it to the document.
+- **Rename** — `layer:rename` updates the layer's display name; visible in LayersPanel and Inspector.
+- **Delete** — `layer:delete` removes the layer and all its items. Automatically clears selection if the deleted layer was selected.
+- **Reorder** — `layer:reorder` changes the layer's `order` field. Items in higher-order layers render on top.
+- **Visibility** — `layer:toggle-visibility` sets `visible: true | false`. The Canvas only renders visible layers.
+- **Lock** — `layer:toggle-lock` sets `locked: true | false`. Locked layers prevent item selection and editing in the Canvas. Lock status is enforced at click time: locked items are non-interactive.
+
+### Item System
+
+Items are the editable objects in a layer. Operations are scoped to a layer (every item belongs to exactly one layer).
+
+- **Add** — `item:add` command creates an item within a layer, with default position (24, 24) and size (128, 96).
+- **Move** — `item:move` updates `x` and `y` coordinates. Triggered by Canvas drag-to-move or Inspector numeric input.
+- **Resize** — `item:resize` updates `width` and `height`. Triggered by Inspector numeric input (no visual handles on Canvas yet).
+- **Delete** — `item:delete` removes the item from its layer. Automatically removes the item from multi-select if present.
+- **Update** — `item:update` patches arbitrary properties (name, rotation, or future properties via `data`). Used by Inspector for all item edits.
+
+### Selection Law
+
+Selection is maintained in `selectionStore` and enforces three rules:
+
+1. **Layer selection** — exactly one layer is selected at a time (`selectedLayerId: string | null`).
+2. **Item selection** — zero or more items within that layer (`selectedItemIds: string[]`). Multi-select shows count in Inspector.
+3. **Cleanup on delete** — deleting a layer clears layer selection; deleting an item removes it from the selected items array.
+4. **Locked layer behavior** — clicking an item in a locked layer does not select it. The Canvas checks `layerLocked` before calling `selectItem`.
+
+**Note:** Selection is not automatically cleared on undo/redo. The snapshot-based history restores document state only; selection persists across undo/redo operations.
+
+### Inspector
+
+The Inspector displays different UI based on selection state:
+
+- **Nothing selected** — empty state with placeholder.
+- **Layer selected (no items)** — shows layer name (editable), order, item count, and visibility/lock toggles.
+- **Single item selected** — shows item name (editable), type badge, position (X/Y), size (W/H), rotation, and delete button.
+- **Multi-select (2+ items)** — shows selected count and bulk delete button.
+
+All edits flow through the command system: layer rename via `layer:rename`, item properties via `item:move`, `item:resize`, or `item:update`.
+
+### Canvas
+
+The Canvas is the interactive editing surface.
+
+- **Rendering** — displays all visible layers' items. Locked items are shown with a 🔒 badge but are non-interactive.
+- **Item selection** — clicking an item selects it (if its layer is unlocked). Canvas click on empty space clears selection.
+- **Drag-to-move** — mousedown on an item starts a drag. During drag, `item:move` is dispatched on every mousemove. Drag state is tracked in a ref to avoid re-renders.
+- **Selection highlighting** — selected items have a `canvas-item--selected` CSS class for visual feedback.
+- **Locked layer enforcement** — locked items have the `canvas-item--locked` class and `tabIndex=-1`. Their click and keyboard handlers are disabled.
+- **Add item button** — visible only when a layer is selected and not locked. Clicking adds a new item to the selected layer.
+
+### Command Coverage
+
+All 15 command types and their undo status:
+
+| Command | Type | Undoable | Handler |
+|---|---|---|---|
+| `layer:create` | Layer | ✓ | Creates layer, returns id |
+| `layer:rename` | Layer | ✓ | Updates layer.name |
+| `layer:toggle-visibility` | Layer | ✓ | Toggles layer.visible |
+| `layer:toggle-lock` | Layer | ✓ | Toggles layer.locked |
+| `layer:delete` | Layer | ✓ | Removes layer, clears selection |
+| `layer:reorder` | Layer | ✓ | Updates layer.order |
+| `item:add` | Item | ✓ | Creates item in layer, returns id |
+| `item:move` | Item | ✓ | Updates item.x, item.y |
+| `item:resize` | Item | ✓ | Updates item.width, item.height |
+| `item:delete` | Item | ✓ | Removes item, cleans up selection |
+| `item:update` | Item | ✓ | Patches item properties |
+| `project:new` | Persistence | ✗ | Routed to persistenceStore |
+| `project:save` | Persistence | ✗ | Routed to persistenceStore |
+| `project:save-as` | Persistence | ✗ | Routed to persistenceStore |
+| `project:open` | Persistence | ✗ | Routed to persistenceStore |
+| `project:close` | Persistence | ✗ | Routed to persistenceStore |
+
+All document-mutating commands are undoable. Persistence commands are excluded because saving should not generate undo entries.
+
+### Known Limitations
+
+- **No grouping** — items cannot be grouped. All items belong directly to a layer.
+- **No multi-layer item move** — items cannot be moved between layers via UI.
+- **No snapping** — Canvas does not offer grid snapping or alignment guides.
+- **No zoom/pan** — Canvas is at 1:1 scale with no viewport controls.
+- **No visual handles** — no grab handles, rotation handles, or corner resize handles on the Canvas. All transforms via Inspector.
+- **No constraints** — items can be resized to 0 or negative dimensions (Inspector will accept them).
+- **No grouping undo** — multi-command operations (e.g., reorder up/down) issue two dispatch calls, generating two history entries.
+
+---
+
+## 12. What Is Not Built Yet
 
 The following capabilities are entirely absent from Phase 1 and Phase 3:
 
-- **Canvas rendering** — no drawing surface, no 2D/WebGL renderer, no hit testing. `LayerItem` positions and dimensions exist as data only.
 - **Backend state** — Rust commands are stateless. The backend does not own or persist any document state (persistence is write-only).
-- **Panel components** — `layers`, `canvas`, `inspector`, and `toolbar` are defined as IDs and visibility flags but no React components implement them.
-- **Selection enforcement** — deleting a layer does not clear `selectionStore.selectedLayerId` if it pointed to the deleted layer.
 - **Item `data` schema** — the `data: Record<string, unknown>` field on `LayerItem` has no per-type validation or schema.
+- **2D rendering with visuals** — Canvas renders items as plain divs. No fill colors, strokes, or visual properties. Real 2D/WebGL rendering is future.
 - **Export** — no image export, no format serialization.
 - **Job queue** — no background task system.
 - **Auth / multi-user** — out of scope; not planned for Phase 2 either.
 
 ---
 
-## 12. Phase 2–4 Attachment Points
+## 13. Phase 2–5 Attachment Points
 
-| Feature | Where it plugs in | Phase |
-|---|---|---|
-| Canvas rendering | Mount a renderer inside the `canvas` panel component. It subscribes to `useDocumentStore` for layer/item data and `useSelectionStore` for selection highlights. No state changes needed. | 4 |
-| Panel components | Create React components for each `PanelId`. Wire `useWorkspaceStore` to control visibility. `workspaceStore` is already complete. | 2 |
-| Selection cleanup on delete | In `commandStore`'s `layer:delete` case, after `doc.removeLayer(layerId)`, call `sel.clearSelection()` if `sel.selectedLayerId === layerId`. | 2 |
-| Item `data` schemas | Add per-type interfaces to `packages/domain` (e.g., `ShapeData`, `TextData`). Update `LayerItem` to a discriminated union. This is a breaking domain change. | 2 |
-| Backend state ownership | Add an `Arc<Mutex<AppState>>` to the Tauri app state. Pass it via `.manage()` in `lib.rs`. Commands become `async` and take `State<'_, AppState>`. | 2 |
-| Structured error handling | Switch layer commands from returning values directly to returning `Result<T, AppError>`. `AppError` is already defined in `error.rs`. | 2 |
-| Delta-based snapshots (perf) | Replace `JSON.parse(JSON.stringify(...))` snapshots with a delta representation to reduce memory usage in large documents. Requires a reconciler. | 4 |
+| Feature | Where it plugs in | Phase | Status |
+|---|---|---|---|
+| Panel components | Create React components for each `PanelId`. Wire `useWorkspaceStore` to control visibility. `workspaceStore` is already complete. | 2 | ✓ Shipped in Phase 4 |
+| Selection cleanup on delete | In `commandStore`'s `layer:delete` case, after `doc.removeLayer(layerId)`, call `sel.clearSelection()` if `sel.selectedLayerId === layerId`. | 2 | ✓ Shipped in Phase 4 |
+| Canvas interactive editing | Drag-to-move items, locked layer enforcement, selection highlighting. Hit testing and item click handling. | 4 | ✓ Shipped in Phase 4 |
+| Item `data` schemas | Add per-type interfaces to `packages/domain` (e.g., `ShapeData`, `TextData`). Update `LayerItem` to a discriminated union. This is a breaking domain change. | 2 | Planned |
+| Backend state ownership | Add an `Arc<Mutex<AppState>>` to the Tauri app state. Pass it via `.manage()` in `lib.rs`. Commands become `async` and take `State<'_, AppState>`. | 2 | Planned |
+| Structured error handling | Switch layer commands from returning values directly to returning `Result<T, AppError>`. `AppError` is already defined in `error.rs`. | 2 | Planned |
+| 2D visual rendering | Real fill colors, strokes, shadows, transforms. Requires choosing a rendering backend (canvas API, WebGL, or library like Konva/Fabric). | 5 | Planned |
+| Delta-based snapshots (perf) | Replace `JSON.parse(JSON.stringify(...))` snapshots with a delta representation to reduce memory usage in large documents. Requires a reconciler. | 5 | Planned |

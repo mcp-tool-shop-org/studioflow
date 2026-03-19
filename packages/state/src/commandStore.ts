@@ -54,12 +54,34 @@ function executeCommand(
         return { success: true };
       }
 
+      case 'layer:toggle-lock': {
+        const { layerId } = payload;
+        if (typeof layerId !== 'string') {
+          return { success: false, error: 'layer:toggle-lock requires layerId string' };
+        }
+        doc.toggleLayerLock(layerId);
+        return { success: true };
+      }
+
       case 'layer:delete': {
         const { layerId } = payload;
         if (typeof layerId !== 'string') {
           return { success: false, error: 'layer:delete requires layerId string' };
         }
+        // Clear selection if deleting the selected layer
+        if (sel.selectedLayerId === layerId) {
+          sel.clearSelection();
+        }
         doc.removeLayer(layerId);
+        return { success: true };
+      }
+
+      case 'layer:reorder': {
+        const { layerId, newOrder } = payload;
+        if (typeof layerId !== 'string' || typeof newOrder !== 'number') {
+          return { success: false, error: 'layer:reorder requires layerId and newOrder' };
+        }
+        doc.reorderLayer(layerId, newOrder);
         return { success: true };
       }
 
@@ -89,10 +111,23 @@ function executeCommand(
         return { success: true };
       }
 
+      case 'item:resize': {
+        const { layerId, itemId, width, height } = payload;
+        if (typeof layerId !== 'string' || typeof itemId !== 'string' || typeof width !== 'number' || typeof height !== 'number') {
+          return { success: false, error: 'item:resize requires layerId, itemId, width, height' };
+        }
+        doc.updateItem(layerId, itemId, { width, height });
+        return { success: true };
+      }
+
       case 'item:delete': {
         const { layerId, itemId } = payload;
         if (typeof layerId !== 'string' || typeof itemId !== 'string') {
           return { success: false, error: 'item:delete requires layerId and itemId strings' };
+        }
+        // Clear selection if deleting selected item
+        if (sel.selectedItemIds.includes(itemId)) {
+          sel.selectItems(sel.selectedItemIds.filter(id => id !== itemId));
         }
         doc.removeItem(layerId, itemId);
         return { success: true };

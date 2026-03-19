@@ -15,6 +15,7 @@ export interface DocumentState {
   removeLayer: (layerId: string) => void;
   renameLayer: (layerId: string, name: string) => void;
   toggleLayerVisibility: (layerId: string) => void;
+  toggleLayerLock: (layerId: string) => void;
   reorderLayer: (layerId: string, newOrder: number) => void;
 
   // Item actions
@@ -65,6 +66,13 @@ export const useDocumentStore = create<DocumentState>()((set, get) => ({
   renameLayer: (layerId, name) =>
     set((state) => ({
       layers: state.layers.map((l) => (l.id === layerId ? { ...l, name } : l)),
+    })),
+
+  toggleLayerLock: (layerId) =>
+    set((state) => ({
+      layers: state.layers.map((l) =>
+        l.id === layerId ? { ...l, locked: !l.locked } : l,
+      ),
     })),
 
   toggleLayerVisibility: (layerId) =>
