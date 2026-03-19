@@ -1,0 +1,40 @@
+{
+  "integrator": "sf5-301",
+  "timestamp": "2026-03-19T11:36:50.000Z",
+  "seam_files_checked": [
+    "packages/domain/src/index.ts",
+    "packages/state/src/index.ts",
+    "packages/state/src/commandStore.ts",
+    "packages/domain/src/command.ts",
+    "packages/domain/src/viewport.ts",
+    "packages/domain/src/selection.ts",
+    "packages/state/src/viewportStore.ts",
+    "packages/state/src/selectionStore.ts",
+    "vitest.config.ts",
+    "packages/state/src/__tests__/__mocks__/tauri-plugin-dialog.ts",
+    "apps/desktop/src/styles/workspace.css"
+  ],
+  "seam_checks": {
+    "domain_barrel_viewport": "PASS — exports viewport.ts (ViewportState, ViewportAction, ContentBounds, ZOOM_STEP, MIN_ZOOM, MAX_ZOOM, DEFAULT_ZOOM)",
+    "domain_barrel_selection": "PASS — exports selection.ts (SelectionMode, SelectionRect, SelectionBounds)",
+    "domain_barrel_complete": "PASS — exports all 8 modules: project, layer, command, workspace, persistence, history, viewport, selection",
+    "state_barrel_useViewportStore": "PASS — exports useViewportStore from viewportStore.js",
+    "state_barrel_ViewportStoreState": "PASS — exports ViewportStoreState type from viewportStore.js",
+    "state_barrel_complete": "PASS — exports useDocumentStore, useSelectionStore, useWorkspaceStore, useCommandStore, usePersistenceStore, useHistoryStore, useViewportStore plus dirtyTracker helpers",
+    "commandStore_exhaustive_switch": "PASS — all 15 CommandType values handled: layer:create/rename/toggle-visibility/toggle-lock/delete/reorder, item:add/move/resize/delete/update, project:new/save/save-as/open/close. No viewport commands in CommandType so no gap.",
+    "vitest_alias_domain": "PASS — resolves to packages/domain/src/index.ts",
+    "vitest_alias_state": "PASS — resolves to packages/state/src/index.ts",
+    "vitest_alias_tauri_mock": "PASS — mock exists at packages/state/src/__tests__/__mocks__/tauri-plugin-dialog.ts"
+  },
+  "seam_fixes_applied": [
+    "apps/desktop/src/styles/workspace.css line 1105-1106: Removed orphaned bare CSS declaration 'overflow: auto;' left outside any selector block by sf5-104 builder. Declaration followed a section comment '=== SF5-104 Inspector multi-select styles ===' but was not wrapped in a rule. This caused an esbuild CSS minification warning (Expected identifier but found whitespace / Unexpected \";\"). Fix: removed the stray comment+declaration; the properly-scoped multi-select inspector rules that follow remain intact."
+  ],
+  "build_result": "pass",
+  "build_warnings_before_fix": 2,
+  "build_warnings_after_fix": 0,
+  "test_files": 12,
+  "test_count": 209,
+  "test_failures": 0,
+  "verdict": "pass",
+  "notes": "All seams are correctly wired. Domain barrel exports viewport.ts and selection.ts types as required. State barrel exports useViewportStore and ViewportStoreState as required. commandStore.ts exhaustive switch covers all 15 CommandType values cleanly — no viewport commands exist in CommandType (ViewportAction is a separate type handled directly by viewportStore). vitest.config.ts aliases are correct and the tauri mock is in place. One CSS integration issue was found and fixed: sf5-104 left a bare 'overflow: auto;' declaration outside any selector, causing a build warning. Removed the orphaned declaration. Build is now warning-free. All 209 tests pass across 12 test files."
+}

@@ -1,0 +1,23 @@
+## Integration Complete — **PASS** ✅
+
+### Checklist Results
+
+| Check | Result |
+|---|---|
+| `packages/domain/src/index.ts` exports `viewport.ts` + `selection.ts` | ✅ Correct |
+| `packages/state/src/index.ts` exports `useViewportStore` + `ViewportStoreState` | ✅ Correct |
+| `commandStore.ts` exhaustive switch covers all 15 `CommandType` values | ✅ No gaps |
+| `vitest.config.ts` aliases for domain, state, tauri mock | ✅ All correct |
+| `pnpm -r build` | ✅ Pass (0 warnings after fix) |
+| `pnpm vitest run` | ✅ 12 files, **209/209 tests pass** |
+
+### One Fix Applied
+
+**`apps/desktop/src/styles/workspace.css` — orphaned CSS declaration** (origin: sf5-104 builder)
+
+Builder sf5-104 left a bare `overflow: auto;` declaration outside any selector block, preceded by a stray section comment. This caused two esbuild CSS minification warnings during production build (`Expected identifier` / `Unexpected ";"`). The declaration was not inside any rule so had no effect on styling. **Removed** the orphaned line and its comment — the correctly-scoped multi-select inspector rules immediately following it are preserved intact.
+
+### Outputs written
+- `workers/sf5-301/integration-report.json` — full seam analysis
+- `workers/sf5-301/artifacts.json` — file change manifest
+- `workers/sf5-301/writeback.json` — machine-readable status for orchestrator
