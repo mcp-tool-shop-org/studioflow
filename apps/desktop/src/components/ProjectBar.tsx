@@ -10,9 +10,10 @@ async function pickOpenPath(): Promise<string | null> {
       filters: [{ name: 'StudioFlow Project', extensions: ['studioflow'] }],
       multiple: false,
     });
+    if (!result) return null;
     if (typeof result === 'string') return result;
-    if (Array.isArray(result) && result.length > 0) return result[0];
-    return null;
+    if (typeof result === 'object' && 'path' in result) return (result as { path: string }).path;
+    return String(result);
   } catch {
     // Fallback to prompt
     return window.prompt('Enter file path to open:') ?? null;

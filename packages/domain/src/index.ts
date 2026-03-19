@@ -3,3 +3,4 @@ export * from './layer.js';
 export * from './command.js';
 export * from './workspace.js';
 export * from './persistence.js';
+export * from './history.js';

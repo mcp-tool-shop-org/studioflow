@@ -383,11 +383,166 @@ This split keeps the backend simple (no in-memory state, no undo/redo knowledge)
 
 ---
 
-## 10. What Is Not Built Yet
+## 10. Command History and Undo/Redo
 
-The following capabilities are entirely absent from Phase 1:
+Undo/redo is a core feature of the command system, implemented via Phase 3's `historyStore`. The system uses snapshot-based history rather than delta-based (inverse commands) because snapshots are simpler to reason about and safe against complex mutations.
 
-- **Undo/redo** — `commandStore.history` accumulates commands but there is no `undo()` action and no snapshot mechanism.
+### History Model
+
+Each undoable command generates a `HistoryEntry`:
+
+```ts
+interface HistoryEntry {
+  id: string;
+  commandId: string;
+  commandType: CommandType;
+  label: string;
+  timestamp: string;
+  beforeSnapshot: DocumentSnapshot;  // State before the command
+  undoable: boolean;
+}
+
+interface DocumentSnapshot {
+  layers: Layer[];
+  nextLayerId: number;
+  nextItemId: number;
+}
+```
+
+The `beforeSnapshot` is taken before executing the command. It captures `layers` (deeply cloned), `nextLayerId`, and `nextItemId` — everything needed to restore the document to its pre-command state. Snapshots are created by deep-cloning the layers array via `JSON.parse(JSON.stringify(...))`.
+
+### Undo/Redo Law
+
+`useHistoryStore` maintains two stacks:
+
+- **`past`** — entries that can be undone (most recent last)
+- **`future`** — entries that can be redone (most recent first, created by undo)
+
+**Undo operation:**
+1. Take a snapshot of the current state (for redo).
+2. Pop the last entry from `past`.
+3. Restore the document to that entry's `beforeSnapshot`.
+4. Push the current snapshot to `future` so redo can restore forward.
+
+**Redo operation:**
+1. Take a snapshot of the current state.
+2. Pop the first entry from `future`.
+3. Restore the document to that entry's `beforeSnapshot` (which is the state after the original command).
+4. Push the current snapshot to `past`.
+
+**Clearing redo:** Any new command after an undo clears the entire `future` stack. History does not branch — if you undo three steps and then perform a new action, those three undone commands are discarded.
+
+### What's Undoable
+
+Only document-mutating commands are undoable:
+
+```ts
+const UNDOABLE_COMMANDS = [
+  'layer:create',
+  'layer:rename',
+  'layer:toggle-visibility',
+  'layer:delete',
+  'item:add',
+  'item:move',
+  'item:delete',
+  'item:update',
+];
+```
+
+Persistence commands are explicitly excluded (not undoable):
+
+```ts
+const NON_UNDOABLE_COMMANDS = [
+  'project:new',
+  'project:save',
+  'project:save-as',
+  'project:open',
+  'project:close',
+];
+```
+
+This is intentional — saving a project should not create an undo entry. Opening or closing a project resets the history via `clearHistory()`.
+
+### Saved Baseline
+
+`historyStore` also owns `savedSnapshot: DocumentSnapshot | null`. This represents the document state at the last successful save:
+
+- `markSaved()` — called by `persistenceStore` after a successful save. Sets `savedSnapshot` to the current state.
+- `isAtSavedState()` — checks if the current document matches `savedSnapshot`. Used by `dirtyTracker` to integrate with `isDirty` logic.
+
+If a user performs mutations and then undoes back to the saved baseline, `isAtSavedState()` returns true and the UI can show the document as clean (not needing save).
+
+### Command Labels
+
+Each command type has a human-readable label for undo/redo UI:
+
+```ts
+const COMMAND_LABELS: Record<CommandType, string> = {
+  'layer:create': 'Add Layer',
+  'layer:rename': 'Rename Layer',
+  'layer:toggle-visibility': 'Toggle Layer Visibility',
+  'layer:delete': 'Delete Layer',
+  'item:add': 'Add Item',
+  'item:move': 'Move Item',
+  'item:delete': 'Delete Item',
+  'item:update': 'Update Item',
+  // persistence commands also have labels but are not undoable
+  'project:new': 'New Project',
+  // ...
+};
+```
+
+`historyStore` computes `undoLabel` and `redoLabel` from the top of the stacks:
+
+- `undoLabel = canUndo ? `Undo ${lastEntry.label}` : null`
+- `redoLabel = canRedo ? `Redo ${lastEntry.label}` : null`
+
+UI buttons/menus can display these labels to show what action will be undone or redone.
+
+### Limits and Performance
+
+- **`MAX_HISTORY = 100`** — when the `past` stack exceeds 100 entries, the oldest entry is discarded (via `shift()`). The `future` stack is unbounded but cleared on any new divergent action.
+- **No branching** — redo is linear. Undo three steps, perform a new action, and the three undone commands vanish.
+- **Snapshot size** — each snapshot is a full deep clone of the layers array. With complex documents (many layers, many items with large `data` fields), memory usage grows. This is acceptable for Phase 3 but may be optimized in Phase 4 via delta-based snapshots.
+
+### Integration with Command Flow
+
+`commandStore.dispatch()` orchestrates the flow:
+
+```ts
+dispatch: (type, payload) => {
+  const command = { id, type, payload, timestamp };
+
+  // BEFORE mutating, record the snapshot
+  useHistoryStore.getState().recordBeforeCommand(command.id, type, payload);
+
+  // Execute the command (mutates documentStore)
+  const result = executeCommand(type, payload);
+
+  // Append to command history
+  set((state) => ({
+    history: [...state.history, command],
+    lastResult: result,
+  }));
+
+  return result;
+};
+```
+
+The key is that `recordBeforeCommand()` is called **before** the command executes. This ensures the snapshot captures the state before the mutation.
+
+### Known Limitations
+
+- **Snapshot-based means memory grows with document complexity.** A document with 100 items and undo depth of 100 will hold ~100 × document size in memory.
+- **No partial undo.** Undo/redo are all-or-nothing per command. There is no "undo only this property" within a command.
+- **Snapshots include all layers.** If only one item changed, the entire layers array is cloned. Optimizing this (delta-based history) is a Phase 4 concern.
+
+---
+
+## 11. What Is Not Built Yet
+
+The following capabilities are entirely absent from Phase 1 and Phase 3:
+
 - **Canvas rendering** — no drawing surface, no 2D/WebGL renderer, no hit testing. `LayerItem` positions and dimensions exist as data only.
 - **Backend state** — Rust commands are stateless. The backend does not own or persist any document state (persistence is write-only).
 - **Panel components** — `layers`, `canvas`, `inspector`, and `toolbar` are defined as IDs and visibility flags but no React components implement them.
@@ -399,14 +554,14 @@ The following capabilities are entirely absent from Phase 1:
 
 ---
 
-## 11. Phase 2 Attachment Points
+## 12. Phase 2–4 Attachment Points
 
-| Feature | Where it plugs in |
-|---|---|
-| Undo/redo | Add `undo()` / `redo()` to `commandStore`. Store snapshots or inverse commands alongside `history`. No other stores need to change. |
-| Canvas rendering | Mount a renderer inside the `canvas` panel component. It subscribes to `useDocumentStore` for layer/item data and `useSelectionStore` for selection highlights. No state changes needed. |
-| Panel components | Create React components for each `PanelId`. Wire `useWorkspaceStore` to control visibility. `workspaceStore` is already complete. |
-| Selection cleanup on delete | In `commandStore`'s `layer:delete` case, after `doc.removeLayer(layerId)`, call `sel.clearSelection()` if `sel.selectedLayerId === layerId`. |
-| Item `data` schemas | Add per-type interfaces to `packages/domain` (e.g., `ShapeData`, `TextData`). Update `LayerItem` to a discriminated union. This is a breaking domain change. |
-| Backend state ownership | Add an `Arc<Mutex<AppState>>` to the Tauri app state. Pass it via `.manage()` in `lib.rs`. Commands become `async` and take `State<'_, AppState>`. |
-| Structured error handling | Switch layer commands from returning values directly to returning `Result<T, AppError>`. `AppError` is already defined in `error.rs`. |
+| Feature | Where it plugs in | Phase |
+|---|---|---|
+| Canvas rendering | Mount a renderer inside the `canvas` panel component. It subscribes to `useDocumentStore` for layer/item data and `useSelectionStore` for selection highlights. No state changes needed. | 4 |
+| Panel components | Create React components for each `PanelId`. Wire `useWorkspaceStore` to control visibility. `workspaceStore` is already complete. | 2 |
+| Selection cleanup on delete | In `commandStore`'s `layer:delete` case, after `doc.removeLayer(layerId)`, call `sel.clearSelection()` if `sel.selectedLayerId === layerId`. | 2 |
+| Item `data` schemas | Add per-type interfaces to `packages/domain` (e.g., `ShapeData`, `TextData`). Update `LayerItem` to a discriminated union. This is a breaking domain change. | 2 |
+| Backend state ownership | Add an `Arc<Mutex<AppState>>` to the Tauri app state. Pass it via `.manage()` in `lib.rs`. Commands become `async` and take `State<'_, AppState>`. | 2 |
+| Structured error handling | Switch layer commands from returning values directly to returning `Result<T, AppError>`. `AppError` is already defined in `error.rs`. | 2 |
+| Delta-based snapshots (perf) | Replace `JSON.parse(JSON.stringify(...))` snapshots with a delta representation to reduce memory usage in large documents. Requires a reconciler. | 4 |

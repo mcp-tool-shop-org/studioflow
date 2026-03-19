@@ -14,3 +14,6 @@ export { usePersistenceStore } from './persistenceStore.js';
 export type { PersistenceStoreState } from './persistenceStore.js';
 
 export { initDirtyTracker, resetDirtyTracker } from './dirtyTracker.js';
+
+export { useHistoryStore } from './historyStore.js';
+export type { HistoryStoreState } from './historyStore.js';

@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { Command, CommandResult, CommandType } from '@studioflow/domain';
 import { useDocumentStore } from './documentStore.js';
 import { useSelectionStore } from './selectionStore.js';
+import { useHistoryStore } from './historyStore.js';
 
 export interface CommandStoreState {
   history: Command[];
@@ -143,6 +144,9 @@ export const useCommandStore = create<CommandStoreState>()((set) => ({
       payload,
       timestamp: new Date().toISOString(),
     };
+
+    // Record snapshot BEFORE mutation for undo support
+    useHistoryStore.getState().recordBeforeCommand(command.id, type, payload);
 
     const result = executeCommand(type, payload);
 

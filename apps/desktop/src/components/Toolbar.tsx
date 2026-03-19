@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { useWorkspaceStore } from '@studioflow/state';
 import { useCommandStore } from '@studioflow/state';
 import { usePersistenceStore } from '@studioflow/state';
+import { useHistoryStore } from '@studioflow/state';
 import ProjectBar from './ProjectBar.js';
 
 interface PingResponse {
@@ -15,7 +16,23 @@ export default function Toolbar() {
   const { panels, togglePanel } = useWorkspaceStore();
   const dispatch = useCommandStore((s) => s.dispatch);
   const isDirty = usePersistenceStore((s) => s.isDirty);
+  const { canUndo, canRedo, undoLabel, redoLabel, undo, redo } = useHistoryStore();
   const [pingResult, setPingResult] = useState<string | null>(null);
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (!e.ctrlKey) return;
+      if (e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+      } else if (e.key === 'Z' && e.shiftKey) {
+        e.preventDefault();
+        redo();
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [undo, redo]);
 
   function handleNewLayer() {
     dispatch('layer:create', {});
@@ -70,6 +87,29 @@ export default function Toolbar() {
             title="Create a new layer"
           >
             + New Layer
+          </button>
+        </div>
+
+        <div className="toolbar__separator" />
+
+        <div className="toolbar__section">
+          <button
+            className="toolbar__btn toolbar__btn--history"
+            onClick={undo}
+            disabled={!canUndo}
+            title={undoLabel ?? 'Undo'}
+            aria-label={undoLabel ?? 'Undo'}
+          >
+            ↩ Undo
+          </button>
+          <button
+            className="toolbar__btn toolbar__btn--history"
+            onClick={redo}
+            disabled={!canRedo}
+            title={redoLabel ?? 'Redo'}
+            aria-label={redoLabel ?? 'Redo'}
+          >
+            ↪ Redo
           </button>
         </div>
 

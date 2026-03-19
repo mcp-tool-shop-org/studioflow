@@ -172,6 +172,16 @@ input {
   font-size: 11px;
 }
 
+.toolbar__btn--history {
+  color: var(--color-text-secondary);
+}
+
+.toolbar__btn--history:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 .toolbar__ping-result {
   font-size: 11px;
   color: var(--color-success);

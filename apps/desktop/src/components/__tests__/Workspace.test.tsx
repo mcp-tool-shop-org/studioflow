@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
-import { useDocumentStore, useSelectionStore, useWorkspaceStore, useCommandStore } from '@studioflow/state';
+import { render, screen, fireEvent, act } from '@testing-library/react';
+import { useDocumentStore, useSelectionStore, useWorkspaceStore, useCommandStore, useHistoryStore } from '@studioflow/state';
 
 // Mock @tauri-apps/api/core so invoke doesn't fail in tests
 vi.mock('@tauri-apps/api/core', () => ({
@@ -18,6 +18,7 @@ beforeEach(() => {
   useSelectionStore.getState().reset();
   useWorkspaceStore.getState().reset();
   useCommandStore.getState().reset();
+  useHistoryStore.getState().reset();
 });
 
 describe('Workspace', () => {
@@ -78,6 +79,38 @@ describe('Toolbar', () => {
   it('renders Ping button', () => {
     render(<Toolbar />);
     expect(screen.getByRole('button', { name: /^ping$/i })).toBeTruthy();
+  });
+
+  it('undo button renders and is disabled when history is empty', () => {
+    render(<Toolbar />);
+    const undoBtn = screen.getByRole('button', { name: /^undo$/i });
+    expect(undoBtn).toBeTruthy();
+    expect((undoBtn as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('after dispatching a command, undo button becomes enabled', () => {
+    render(<Toolbar />);
+    // Dispatch a layer:create command inside act so React state updates are flushed
+    act(() => {
+      useCommandStore.getState().dispatch('layer:create', {});
+    });
+    const undoBtns = screen.getAllByRole('button', { name: /undo/i });
+    // At least one undo button should now be enabled
+    const enabledUndo = undoBtns.find((btn) => !(btn as HTMLButtonElement).disabled);
+    expect(enabledUndo).toBeTruthy();
+  });
+
+  it('clicking undo button calls historyStore.undo', () => {
+    // Dispatch a command first so undo is enabled
+    useCommandStore.getState().dispatch('layer:create', {});
+    render(<Toolbar />);
+    const undoBtn = screen.getByRole('button', { name: /^undo/i });
+    expect((undoBtn as HTMLButtonElement).disabled).toBe(false);
+    fireEvent.click(undoBtn);
+    // After undo, the layer should be gone
+    expect(useDocumentStore.getState().layers.length).toBe(0);
+    // And undo should no longer be available
+    expect(useHistoryStore.getState().canUndo).toBe(false);
   });
 });
 
