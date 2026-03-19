@@ -245,14 +245,151 @@ Four panels are defined:
 
 ---
 
-## 9. What Is Not Built Yet
+## 9. Project Persistence
+
+Phase 2 adds comprehensive file save/load and dirty-state tracking.
+
+### Project File Format
+
+Files are JSON with an explicit three-part structure:
+
+```ts
+interface ProjectFile {
+  schemaVersion: number;      // For future migration handling
+  project: Project;           // Metadata: id, name, createdAt, updatedAt, schemaVersion
+  layers: Layer[];            // All layers and their items (flattened by persistence layer)
+}
+```
+
+`schemaVersion` must be present and match `CURRENT_SCHEMA_VERSION` (1). The Rust backend rejects files with a future schema version. This is not a state dump — it is an intentional serialization contract. `project.schemaVersion` is redundant with the file-level field but kept for consistency with the domain type.
+
+### Persistence Flow
+
+All persistence operations follow a request-response pattern:
+
+```
+ProjectBar component
+  └─ click "Save" or "Open"
+       └─ pickSavePath() or pickOpenPath()  [Tauri dialog plugin]
+            └─ persistenceStore.saveProjectAs(path) or openProject(path)
+                 └─ buildProjectFile() [reads documentStore.project and .layers]
+                 └─ invoke('save_project', { path, data }) [IPC to Rust]
+                      └─ write_project_file() [Rust, filesystem write]
+                      └─ return PersistenceResponse { success, path?, error? }
+                 └─ persistenceStore.setState({ isDirty: false, lastSavedAt, recentProjects })
+                 └─ Zustand notifies ProjectBar → UI updates
+```
+
+Loading is symmetrical:
+
+```
+invoke('load_project', { path })
+  └─ load_project() [Rust, filesystem read + parse]
+  └─ return ProjectFile { schemaVersion, project, layers }
+  └─ persistenceStore._isLoadingProject = true  [flag for dirtyTracker suppression]
+  └─ documentStore.setState({ project, layers, ... })
+  └─ persistenceStore._isLoadingProject = false
+  └─ persistenceStore.setState({ isDirty: false, ... })
+```
+
+The backend is stateless — Rust does not own or cache the document. All operations are file I/O and serialization. The frontend (TypeScript) reads and writes the `documentStore` before and after each backend call.
+
+### Dirty State Tracking
+
+`usePersistenceStore` owns three fields:
+
+- `isDirty` — true if any mutation to `documentStore` has occurred since load or save
+- `lastSavedAt` — ISO timestamp of last successful save
+- `lastModifiedAt` — ISO timestamp of last change (for future conflict detection)
+
+`dirtyTracker.ts` implements the tracking as a Zustand subscriber to `documentStore`:
+
+```ts
+useDocumentStore.subscribe((state) => {
+  // Skip first call and calls during _isLoadingProject
+  if (!initialized || persistenceStore._isLoadingProject) return;
+
+  // Compare project and layers references
+  if (state.project !== previousProject || state.layers !== previousLayers) {
+    persistenceStore.markDirty();
+  }
+});
+```
+
+The tracker is intentionally NOT a Zustand middleware so it can live outside the store definition. It is initialized by `initDirtyTracker()` (called at app startup) and uses `_isLoadingProject` as a suppression flag — while loading, changes to `documentStore` do not set `isDirty`. This prevents marking the document as dirty immediately after opening a file.
+
+### Recent Projects
+
+The backend maintains a max-10 list of recently opened projects in `~/.local/share/studioflow/recent-projects.json` (or equivalent per-platform app data dir). Each entry is:
+
+```ts
+interface RecentProject {
+  id: string;
+  name: string;
+  path: string;
+  lastOpenedAt: string;  // ISO timestamp
+}
+```
+
+When a project is opened or saved, `persistenceStore.saveProjectAs()` and `openProject()` call `addToRecents()`, which:
+1. Filters out any existing entry with the same `path` or `id` (deduplication)
+2. Prepends the new entry
+3. Slices to keep max 20 (slightly higher than the Rust-side max of 10 for safety)
+
+The Rust side also enforces a max 10 cap and sorts by `lastOpenedAt` descending. The frontend can fetch the list via `loadRecentProjects()`, which calls `invoke('get_recent_projects')`.
+
+### Validation
+
+The backend provides two validation paths:
+
+**`load_project(path: String) → LoadProjectResponse`**
+
+Reads a file from disk and parses it. Checks:
+- File exists (returns `reason: "FILE_NOT_FOUND"` if not)
+- Valid JSON (returns `reason: "INVALID_JSON"` if not)
+- Has `schemaVersion` field (returns `reason: "MISSING_SCHEMA_VERSION"` if not)
+- Deserializes to `ProjectFile` struct (returns `reason: "SCHEMA_MISMATCH"` if it doesn't)
+
+Errors include a `reason` code for UI handling (e.g., showing appropriate dialogs).
+
+**`validate_project_file(data: String) → ValidationResponse`**
+
+Validates JSON string without touching disk. Collects all errors and warnings:
+- Missing `schemaVersion` → error
+- `schemaVersion` > `CURRENT_SCHEMA_VERSION` → error
+- Missing `project.id` → error
+- Missing `project.name` → error
+- Missing `layers` field → warning (unusual but not fatal)
+
+Returns `{ valid: bool, errors: Vec, warnings: Vec, schemaVersion? }`.
+
+### What Backend Owns vs Frontend Owns
+
+**Backend (Rust) owns:**
+- File I/O (read, write, directory creation)
+- JSON serialization and deserialization
+- Schema validation (structure, schemaVersion checks)
+- Recent projects persistence (file write/read in app data dir)
+- Timestamps (using `chrono::Utc::now()`)
+
+**Frontend (TypeScript) owns:**
+- State hydration — when a file loads, the frontend decides what calls to make to `documentStore`
+- Dirty-state semantics — when to mark dirty, when to suppress marking
+- Recent projects UI — which entries to show, what to do when opening
+- Command dispatch — all document mutations still go through `commandStore.dispatch()`
+- User dialogs — open/save file pickers, error messages, unsaved-changes prompts
+
+This split keeps the backend simple (no in-memory state, no undo/redo knowledge) and the frontend flexible (can load a file and choose to discard it without persisting, can batch mutations before marking clean, etc.).
+
+---
+
+## 10. What Is Not Built Yet
 
 The following capabilities are entirely absent from Phase 1:
 
-- **Persistence** — no file save/load, no SQLite, no local storage. Closing the window loses all state.
 - **Undo/redo** — `commandStore.history` accumulates commands but there is no `undo()` action and no snapshot mechanism.
 - **Canvas rendering** — no drawing surface, no 2D/WebGL renderer, no hit testing. `LayerItem` positions and dimensions exist as data only.
-- **Backend state** — Rust commands are stateless. The backend does not own or persist any document state.
+- **Backend state** — Rust commands are stateless. The backend does not own or persist any document state (persistence is write-only).
 - **Panel components** — `layers`, `canvas`, `inspector`, and `toolbar` are defined as IDs and visibility flags but no React components implement them.
 - **Selection enforcement** — deleting a layer does not clear `selectionStore.selectedLayerId` if it pointed to the deleted layer.
 - **Item `data` schema** — the `data: Record<string, unknown>` field on `LayerItem` has no per-type validation or schema.
@@ -262,12 +399,11 @@ The following capabilities are entirely absent from Phase 1:
 
 ---
 
-## 10. Phase 2 Attachment Points
+## 11. Phase 2 Attachment Points
 
 | Feature | Where it plugs in |
 |---|---|
 | Undo/redo | Add `undo()` / `redo()` to `commandStore`. Store snapshots or inverse commands alongside `history`. No other stores need to change. |
-| Persistence (save/load) | Add Tauri commands in a new `commands/project.rs`. On load, call `documentStore.setProject()` and reconstruct layers via `documentStore.addLayer()`. Alternatively, replace counter-based IDs with UUIDs to match persisted records. |
 | Canvas rendering | Mount a renderer inside the `canvas` panel component. It subscribes to `useDocumentStore` for layer/item data and `useSelectionStore` for selection highlights. No state changes needed. |
 | Panel components | Create React components for each `PanelId`. Wire `useWorkspaceStore` to control visibility. `workspaceStore` is already complete. |
 | Selection cleanup on delete | In `commandStore`'s `layer:delete` case, after `doc.removeLayer(layerId)`, call `sel.clearSelection()` if `sel.selectedLayerId === layerId`. |
