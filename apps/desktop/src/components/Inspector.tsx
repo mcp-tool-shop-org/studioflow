@@ -1,8 +1,7 @@
 import React, { useCallback, useRef } from 'react';
 import { useDocumentStore, useSelectionStore, useCommandStore } from '@studioflow/state';
+import { DEFAULT_FILL } from '@studioflow/domain';
 import ColorPicker from './ColorPicker';
-
-const DEFAULT_FILL = '#2a2a38';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -242,10 +241,10 @@ export default function Inspector() {
   const commitFill = useCallback(
     (color: string) => {
       if (!singleItem || !selectedLayerId) return;
-      dispatch('item:update', {
+      dispatch('item:set-fill', {
         layerId: selectedLayerId,
         itemId: singleItem.id,
-        patch: { data: { ...singleItem.data, fill: color } },
+        color,
       });
     },
     [dispatch, selectedLayerId, singleItem],
@@ -254,10 +253,10 @@ export default function Inspector() {
   const commitStroke = useCallback(
     (color: string) => {
       if (!singleItem || !selectedLayerId) return;
-      dispatch('item:update', {
+      dispatch('item:set-stroke', {
         layerId: selectedLayerId,
         itemId: singleItem.id,
-        patch: { data: { ...singleItem.data, stroke: color } },
+        color,
       });
     },
     [dispatch, selectedLayerId, singleItem],
@@ -268,10 +267,10 @@ export default function Inspector() {
     (color: string) => {
       if (!selectedLayerId) return;
       for (const item of selectedItems) {
-        dispatch('item:update', {
+        dispatch('item:set-fill', {
           layerId: selectedLayerId,
           itemId: item.id,
-          patch: { data: { ...item.data, fill: color } },
+          color,
         });
       }
     },
@@ -282,10 +281,10 @@ export default function Inspector() {
     (color: string) => {
       if (!selectedLayerId) return;
       for (const item of selectedItems) {
-        dispatch('item:update', {
+        dispatch('item:set-stroke', {
           layerId: selectedLayerId,
           itemId: item.id,
-          patch: { data: { ...item.data, stroke: color } },
+          color,
         });
       }
     },
@@ -295,11 +294,11 @@ export default function Inspector() {
   // ── multi-select derived color values ─────────────────────────────────
   const multiFill =
     selectedItems.length > 1
-      ? getMixedValue(selectedItems.map((i) => (typeof i.data.fill === 'string' ? i.data.fill : DEFAULT_FILL)))
+      ? getMixedValue(selectedItems.map((i) => (typeof i.fill === 'string' ? i.fill : DEFAULT_FILL)))
       : null;
   const multiStroke =
     selectedItems.length > 1
-      ? getMixedValue(selectedItems.map((i) => (typeof i.data.stroke === 'string' ? i.data.stroke : '')))
+      ? getMixedValue(selectedItems.map((i) => (typeof i.stroke === 'string' ? i.stroke : '')))
       : null;
 
   // ── delete helpers ──────────────────────────────────────────────────────
@@ -532,12 +531,12 @@ export default function Inspector() {
               <div className="inspector-color-section__title">Colors</div>
               <ColorPicker
                 label="Fill"
-                value={typeof singleItem.data.fill === 'string' ? singleItem.data.fill : DEFAULT_FILL}
+                value={typeof singleItem.fill === 'string' ? singleItem.fill : DEFAULT_FILL}
                 onChange={commitFill}
               />
               <ColorPicker
                 label="Stroke"
-                value={typeof singleItem.data.stroke === 'string' ? singleItem.data.stroke : ''}
+                value={typeof singleItem.stroke === 'string' ? singleItem.stroke : ''}
                 onChange={commitStroke}
               />
             </div>

@@ -311,8 +311,8 @@ describe('Inspector', () => {
     expect(screen.getByText('Colors')).toBeTruthy();
   });
 
-  // 15 — Changing fill color dispatches item:update command
-  it('dispatches item:update with fill when fill color is changed', () => {
+  // 15 — Changing fill color dispatches item:set-fill command
+  it('dispatches item:set-fill when fill color is changed', () => {
     const { layerId, itemIds } = setupLayerWithItems(1);
     act(() => {
       useSelectionStore.getState().selectLayer(layerId);
@@ -327,7 +327,7 @@ describe('Inspector', () => {
 
     const layer = useDocumentStore.getState().layers.find((l) => l.id === layerId);
     const item = layer?.items.find((i) => i.id === itemIds[0]);
-    expect(item?.data.fill).toBe('#ff0000');
+    expect(item?.fill).toBe('#ff0000');
   });
 
   // 16 — Multi-select with different fills shows "mixed"
@@ -341,8 +341,9 @@ describe('Inspector', () => {
       width: 50,
       height: 50,
       rotation: 0,
-      data: { fill: '#ff0000' },
+      data: {},
     });
+    if (item1) useDocumentStore.getState().setItemFill(layer.id, item1.id, '#ff0000');
     const item2 = useDocumentStore.getState().addItem(layer.id, {
       name: 'Blue',
       type: 'shape',
@@ -351,8 +352,9 @@ describe('Inspector', () => {
       width: 50,
       height: 50,
       rotation: 0,
-      data: { fill: '#0000ff' },
+      data: {},
     });
+    if (item2) useDocumentStore.getState().setItemFill(layer.id, item2.id, '#0000ff');
     act(() => {
       useSelectionStore.getState().selectLayer(layer.id);
       useSelectionStore.getState().selectItems([item1!.id, item2!.id]);
@@ -363,8 +365,8 @@ describe('Inspector', () => {
     expect(mixedIndicators.length).toBeGreaterThanOrEqual(1);
   });
 
-  // 17 — Multi-select color change dispatches commands for all items
-  it('dispatches item:update for all selected items when fill color is changed in multi-select', () => {
+  // 17 — Multi-select color change dispatches item:set-fill for all items
+  it('dispatches item:set-fill for all selected items when fill color is changed in multi-select', () => {
     const layer = useDocumentStore.getState().addLayer('Batch Layer');
     const item1 = useDocumentStore.getState().addItem(layer.id, {
       name: 'A',
@@ -374,8 +376,9 @@ describe('Inspector', () => {
       width: 50,
       height: 50,
       rotation: 0,
-      data: { fill: '#ff0000' },
+      data: {},
     });
+    if (item1) useDocumentStore.getState().setItemFill(layer.id, item1.id, '#ff0000');
     const item2 = useDocumentStore.getState().addItem(layer.id, {
       name: 'B',
       type: 'shape',
@@ -384,8 +387,9 @@ describe('Inspector', () => {
       width: 50,
       height: 50,
       rotation: 0,
-      data: { fill: '#0000ff' },
+      data: {},
     });
+    if (item2) useDocumentStore.getState().setItemFill(layer.id, item2.id, '#0000ff');
     act(() => {
       useSelectionStore.getState().selectLayer(layer.id);
       useSelectionStore.getState().selectItems([item1!.id, item2!.id]);
@@ -400,7 +404,7 @@ describe('Inspector', () => {
 
     const updatedLayer = useDocumentStore.getState().layers.find((l) => l.id === layer.id);
     updatedLayer?.items.forEach((item) => {
-      expect(item.data.fill).toBe('#00ff00');
+      expect(item.fill).toBe('#00ff00');
     });
   });
 });

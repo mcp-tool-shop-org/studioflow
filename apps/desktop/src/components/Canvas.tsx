@@ -365,9 +365,8 @@ export default function Canvas() {
               const isSelected = selectedItemIds.includes(item.id);
               const isLocked = layer.locked;
 
-              // Access optional fill/stroke color properties
-              const itemAny = item as typeof item & { fill?: string; stroke?: string };
-              const hasStroke = !!itemAny.stroke;
+              // fill and stroke are optional top-level fields on LayerItem (from color domain)
+              const hasStroke = !!item.stroke;
 
               return (
                 <div
@@ -384,8 +383,8 @@ export default function Canvas() {
                     width: item.width,
                     height: item.height,
                     transform: item.rotation ? `rotate(${item.rotation}deg)` : undefined,
-                    backgroundColor: itemAny.fill || '#2a2a38',
-                    border: hasStroke ? `2px solid ${itemAny.stroke}` : undefined,
+                    backgroundColor: item.fill || '#2a2a38',
+                    border: hasStroke ? `2px solid ${item.stroke}` : undefined,
                   }}
                   onClick={(e) => handleItemClick(e, item.id, isLocked)}
                   onMouseDown={(e) =>
