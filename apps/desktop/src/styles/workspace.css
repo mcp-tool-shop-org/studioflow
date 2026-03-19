@@ -618,6 +618,11 @@ input {
   margin-top: 2px;
 }
 
+/* Canvas item color properties */
+.canvas-item--has-stroke {
+  box-sizing: border-box;
+}
+
 /* ============================================================
    Inspector Panel
    ============================================================ */
