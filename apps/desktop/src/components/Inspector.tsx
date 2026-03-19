@@ -1,5 +1,8 @@
 import React, { useCallback, useRef } from 'react';
 import { useDocumentStore, useSelectionStore, useCommandStore } from '@studioflow/state';
+import ColorPicker from './ColorPicker';
+
+const DEFAULT_FILL = '#2a2a38';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -235,6 +238,70 @@ export default function Inspector() {
     [dispatch, selectedLayerId, singleItem],
   );
 
+  // ── color commit helpers (single item) ─────────────────────────────────
+  const commitFill = useCallback(
+    (color: string) => {
+      if (!singleItem || !selectedLayerId) return;
+      dispatch('item:update', {
+        layerId: selectedLayerId,
+        itemId: singleItem.id,
+        patch: { data: { ...singleItem.data, fill: color } },
+      });
+    },
+    [dispatch, selectedLayerId, singleItem],
+  );
+
+  const commitStroke = useCallback(
+    (color: string) => {
+      if (!singleItem || !selectedLayerId) return;
+      dispatch('item:update', {
+        layerId: selectedLayerId,
+        itemId: singleItem.id,
+        patch: { data: { ...singleItem.data, stroke: color } },
+      });
+    },
+    [dispatch, selectedLayerId, singleItem],
+  );
+
+  // ── color commit helpers (multi-select) ───────────────────────────────
+  const batchFill = useCallback(
+    (color: string) => {
+      if (!selectedLayerId) return;
+      for (const item of selectedItems) {
+        dispatch('item:update', {
+          layerId: selectedLayerId,
+          itemId: item.id,
+          patch: { data: { ...item.data, fill: color } },
+        });
+      }
+    },
+    [dispatch, selectedLayerId, selectedItems],
+  );
+
+  const batchStroke = useCallback(
+    (color: string) => {
+      if (!selectedLayerId) return;
+      for (const item of selectedItems) {
+        dispatch('item:update', {
+          layerId: selectedLayerId,
+          itemId: item.id,
+          patch: { data: { ...item.data, stroke: color } },
+        });
+      }
+    },
+    [dispatch, selectedLayerId, selectedItems],
+  );
+
+  // ── multi-select derived color values ─────────────────────────────────
+  const multiFill =
+    selectedItems.length > 1
+      ? getMixedValue(selectedItems.map((i) => (typeof i.data.fill === 'string' ? i.data.fill : DEFAULT_FILL)))
+      : null;
+  const multiStroke =
+    selectedItems.length > 1
+      ? getMixedValue(selectedItems.map((i) => (typeof i.data.stroke === 'string' ? i.data.stroke : '')))
+      : null;
+
   // ── delete helpers ──────────────────────────────────────────────────────
   const deleteSingleItem = useCallback(() => {
     if (!singleItem || !selectedLayerId) return;
@@ -461,6 +528,20 @@ export default function Inspector() {
               </div>
             </div>
 
+            <div className="inspector-color-section">
+              <div className="inspector-color-section__title">Colors</div>
+              <ColorPicker
+                label="Fill"
+                value={typeof singleItem.data.fill === 'string' ? singleItem.data.fill : DEFAULT_FILL}
+                onChange={commitFill}
+              />
+              <ColorPicker
+                label="Stroke"
+                value={typeof singleItem.data.stroke === 'string' ? singleItem.data.stroke : ''}
+                onChange={commitStroke}
+              />
+            </div>
+
             <div className="inspector-section">
               <button
                 className="inspector-btn inspector-btn--danger"
@@ -545,6 +626,20 @@ export default function Inspector() {
                   ↓
                 </button>
               </div>
+            </div>
+
+            <div className="inspector-color-section">
+              <div className="inspector-color-section__title">Colors</div>
+              <ColorPicker
+                label="Fill"
+                value={multiFill}
+                onChange={batchFill}
+              />
+              <ColorPicker
+                label="Stroke"
+                value={multiStroke}
+                onChange={batchStroke}
+              />
             </div>
 
             <div className="inspector-section inspector-multi-actions">
