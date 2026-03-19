@@ -1,0 +1,584 @@
+/* ============================================================
+   StudioFlow Workspace — Dark Theme Layout
+   ============================================================ */
+
+:root {
+  --color-bg-app: #1a1a1f;
+  --color-bg-toolbar: #111116;
+  --color-bg-panel: #1e1e26;
+  --color-bg-panel-header: #16161c;
+  --color-bg-canvas: #13131a;
+  --color-bg-item: #2a2a38;
+  --color-bg-item-hover: #35354a;
+  --color-bg-item-selected: #2d3a5a;
+  --color-border: #2e2e3e;
+  --color-border-accent: #4a4a6a;
+  --color-text-primary: #e0e0f0;
+  --color-text-secondary: #8888aa;
+  --color-text-muted: #55557a;
+  --color-accent: #6c8efb;
+  --color-accent-hover: #829dfc;
+  --color-accent-dim: #2d3a5a;
+  --color-danger: #e05c5c;
+  --color-success: #5ce07c;
+  --color-visibility-on: #6c8efb;
+  --color-visibility-off: #55557a;
+  --toolbar-height: 48px;
+  --layers-width: 240px;
+  --inspector-width: 280px;
+  --panel-transition: width 0.2s ease, opacity 0.2s ease;
+}
+
+/* ============================================================
+   Reset / Base
+   ============================================================ */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 13px;
+  background: var(--color-bg-app);
+  color: var(--color-text-primary);
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+}
+
+button {
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  border: none;
+  background: none;
+  color: inherit;
+}
+
+input {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+}
+
+/* ============================================================
+   Workspace Root Layout
+   ============================================================ */
+.workspace-root {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+/* ============================================================
+   Toolbar
+   ============================================================ */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: var(--toolbar-height);
+  min-height: var(--toolbar-height);
+  background: var(--color-bg-toolbar);
+  border-bottom: 1px solid var(--color-border);
+  padding: 0 12px;
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+.toolbar__title {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--color-text-primary);
+  margin-right: 8px;
+}
+
+.toolbar__separator {
+  width: 1px;
+  height: 24px;
+  background: var(--color-border);
+  margin: 0 4px;
+}
+
+.toolbar__section {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.toolbar__section--right {
+  margin-left: auto;
+}
+
+.toolbar__btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 5px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  background: transparent;
+  border: 1px solid transparent;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.toolbar__btn:hover {
+  background: var(--color-bg-item);
+  color: var(--color-text-primary);
+  border-color: var(--color-border-accent);
+}
+
+.toolbar__btn--active {
+  background: var(--color-accent-dim);
+  color: var(--color-accent);
+  border-color: var(--color-accent-dim);
+}
+
+.toolbar__btn--action {
+  background: var(--color-accent-dim);
+  color: var(--color-accent);
+  border-color: transparent;
+}
+
+.toolbar__btn--action:hover {
+  background: var(--color-accent);
+  color: #fff;
+  border-color: transparent;
+}
+
+.toolbar__btn--ping {
+  color: var(--color-text-muted);
+  font-size: 11px;
+}
+
+.toolbar__ping-result {
+  font-size: 11px;
+  color: var(--color-success);
+  padding: 2px 8px;
+  background: rgba(92, 224, 124, 0.1);
+  border-radius: 4px;
+  white-space: nowrap;
+  animation: fade-in 0.2s ease;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(-2px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ============================================================
+   Workspace Body (three-column)
+   ============================================================ */
+.workspace-body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ============================================================
+   Panel Base
+   ============================================================ */
+.panel {
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg-panel);
+  border-right: 1px solid var(--color-border);
+  overflow: hidden;
+  flex-shrink: 0;
+  transition: var(--panel-transition);
+}
+
+.panel--hidden {
+  width: 0 !important;
+  opacity: 0;
+  pointer-events: none;
+  border: none;
+}
+
+.panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  height: 36px;
+  min-height: 36px;
+  background: var(--color-bg-panel-header);
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.panel__title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+}
+
+.panel__body {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.panel__footer {
+  padding: 8px;
+  border-top: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   Layers Panel
+   ============================================================ */
+.layers-panel {
+  width: var(--layers-width);
+}
+
+.layer-list {
+  list-style: none;
+  padding: 4px 0;
+}
+
+.layer-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: background 0.1s;
+  border-left: 2px solid transparent;
+  user-select: none;
+}
+
+.layer-item:hover {
+  background: var(--color-bg-item-hover);
+}
+
+.layer-item--selected {
+  background: var(--color-bg-item-selected);
+  border-left-color: var(--color-accent);
+}
+
+.layer-item--hidden {
+  opacity: 0.5;
+}
+
+.layer-item__name {
+  flex: 1;
+  font-size: 13px;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.layer-item__visibility-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  color: var(--color-visibility-on);
+  font-size: 14px;
+  transition: color 0.1s, background 0.1s;
+}
+
+.layer-item__visibility-btn:hover {
+  background: var(--color-bg-item);
+}
+
+.layer-item__visibility-btn--hidden {
+  color: var(--color-visibility-off);
+}
+
+.panel-add-btn {
+  width: 100%;
+  padding: 7px 12px;
+  border-radius: 5px;
+  background: var(--color-bg-item);
+  border: 1px dashed var(--color-border-accent);
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  text-align: center;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.panel-add-btn:hover {
+  background: var(--color-accent-dim);
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+/* ============================================================
+   Canvas
+   ============================================================ */
+.canvas-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg-canvas);
+  border-right: none;
+  overflow: hidden;
+}
+
+.canvas-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  height: 36px;
+  min-height: 36px;
+  background: var(--color-bg-panel-header);
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.canvas-panel__title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+}
+
+.canvas-panel__layer-name {
+  font-size: 11px;
+  color: var(--color-accent);
+  font-weight: 500;
+}
+
+.canvas-area {
+  flex: 1;
+  position: relative;
+  overflow: auto;
+}
+
+.canvas-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.canvas-empty__icon {
+  font-size: 32px;
+  opacity: 0.3;
+}
+
+.canvas-add-btn {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  padding: 8px 16px;
+  background: var(--color-accent-dim);
+  color: var(--color-accent);
+  border: 1px solid var(--color-accent);
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  transition: background 0.15s, color 0.15s;
+  z-index: 5;
+}
+
+.canvas-add-btn:hover {
+  background: var(--color-accent);
+  color: #fff;
+}
+
+/* Canvas items */
+.canvas-item {
+  position: absolute;
+  background: var(--color-bg-item);
+  border: 1px solid var(--color-border-accent);
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: 6px 8px;
+  cursor: pointer;
+  user-select: none;
+  transition: border-color 0.1s, box-shadow 0.1s, background 0.1s;
+  overflow: hidden;
+}
+
+.canvas-item:hover {
+  border-color: var(--color-accent);
+  background: var(--color-bg-item-hover);
+}
+
+.canvas-item--selected {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px var(--color-accent-dim);
+  background: var(--color-bg-item-selected);
+}
+
+.canvas-item__name {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.canvas-item__type {
+  font-size: 10px;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+/* ============================================================
+   Inspector Panel
+   ============================================================ */
+.inspector-panel {
+  width: var(--inspector-width);
+  border-right: none;
+  border-left: 1px solid var(--color-border);
+}
+
+.inspector-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 120px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  padding: 16px;
+  text-align: center;
+}
+
+.inspector-section {
+  padding: 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.inspector-section__label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+  margin-bottom: 10px;
+}
+
+.inspector-field {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  gap: 8px;
+}
+
+.inspector-field:last-child {
+  margin-bottom: 0;
+}
+
+.inspector-field__label {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  width: 52px;
+  flex-shrink: 0;
+}
+
+.inspector-field__value {
+  font-size: 12px;
+  color: var(--color-text-primary);
+  background: var(--color-bg-app);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 3px 7px;
+  flex: 1;
+  min-width: 0;
+}
+
+.inspector-field__input {
+  font-size: 12px;
+  color: var(--color-text-primary);
+  background: var(--color-bg-app);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 3px 7px;
+  flex: 1;
+  min-width: 0;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.inspector-field__input:focus {
+  border-color: var(--color-accent);
+}
+
+.inspector-field__type-badge {
+  display: inline-block;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: var(--color-accent-dim);
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
+.inspector-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.inspector-grid-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.inspector-grid-field__label {
+  font-size: 10px;
+  color: var(--color-text-muted);
+}
+
+.inspector-grid-field__value {
+  font-size: 12px;
+  color: var(--color-text-primary);
+  background: var(--color-bg-app);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 3px 7px;
+}
+
+/* ============================================================
+   Scrollbar
+   ============================================================ */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border-accent);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}
