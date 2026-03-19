@@ -1,0 +1,13 @@
+{
+  "files_created": [
+    "apps/desktop/src/components/__tests__/Canvas.test.tsx"
+  ],
+  "files_modified": [
+    "apps/desktop/src/components/Canvas.tsx",
+    "apps/desktop/src/styles/workspace.css"
+  ],
+  "files_deleted": [],
+  "test_files": [
+    "apps/desktop/src/components/__tests__/Canvas.test.tsx"
+  ]
+}

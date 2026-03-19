@@ -1,0 +1,30 @@
+**SF5-104 complete.** Here's a summary of everything delivered:
+
+## What was built
+
+### `Inspector.tsx` — Multi-Select Inspector
+- **`MixedNumericInput`** component: shows `—` placeholder when selected items have different values; committing a value applies to ALL selected items via dispatch loop
+- **`getMixedValue<T>()`** helper: returns shared value or `null` (mixed) for any property
+- **Multi-select section** (renders when 2+ items selected):
+  - Count display ("3 items")
+  - Batch-editable X/Y position fields with mixed-value indicators
+  - 4 **Nudge** arrow buttons (←→↑↓) dispatching `item:move` with ±10px
+  - **Duplicate Selected** — dispatches `item:add` per item with +20/+20 offset
+  - **Delete Selected** — dispatches `item:delete` per item
+
+### `Toolbar.tsx` — Keyboard Shortcuts
+- Reads live store state inside the event handler (no stale closures)
+- `Delete/Backspace` → delete selected items
+- `Ctrl+D` → duplicate selected items  
+- `Ctrl+A` → select all items on active layer
+- `Arrow keys` → nudge ±1px; `Shift+Arrow` → nudge ±10px
+- `Escape` → clear selection
+- Contextual selection toolbar with Duplicate/Delete buttons + `<kbd>` shortcut hints
+
+### `workspace.css` — New Styles
+Mixed-value input styling, nudge grid/buttons, multi-select action layout, shortcut hint badges, selection info chip, toolbar danger button variant
+
+### `Inspector.test.tsx` — 13 Tests
+Empty state, single item, multi-select count, mixed X placeholder, uniform X value, delete dispatches for all, duplicate creates copies, nudge up/down/left/right, duplicate offset verification
+
+**Results:** 13/13 tests ✅ · Full build ✅

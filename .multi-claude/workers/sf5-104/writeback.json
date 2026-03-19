@@ -1,0 +1,28 @@
+{
+  "writeback": {
+    "module": "apps/desktop/src/components",
+    "change_type": "feature",
+    "summary": "Add multi-select inspector with batch actions (duplicate, delete, nudge), keyboard shortcuts (Delete, Ctrl+D, Ctrl+A, Arrow keys, Escape) in Toolbar, mixed-value indicators for shared properties, and 13 Inspector tests covering all new interactions.",
+    "files_touched": [
+      "apps/desktop/src/components/Inspector.tsx",
+      "apps/desktop/src/components/Toolbar.tsx",
+      "apps/desktop/src/styles/workspace.css",
+      "apps/desktop/src/components/__tests__/Inspector.test.tsx"
+    ],
+    "contract_delta": "none",
+    "risks": "Keyboard shortcuts (Delete/Backspace) are guarded against input/textarea elements but could interfere with other focusable widgets; nudge from both Toolbar keydown and Inspector buttons are independent — concurrent usage is safe.",
+    "dependencies_affected": [],
+    "tests_added": [
+      "apps/desktop/src/components/__tests__/Inspector.test.tsx"
+    ],
+    "docs_required": false,
+    "architecture_impact": null,
+    "relationship_suggestions": [],
+    "prose": {
+      "what_changed": "Inspector.tsx now renders a rich multi-select panel when 2+ items are selected: it shows item count, batch-editable X/Y position fields (with '—' mixed-value placeholders when values differ), four nudge arrow buttons (±10px), a Duplicate Selected button (item:add with +20px offset for each), and a Delete Selected button. A new MixedNumericInput component handles the mixed/uniform display. Toolbar.tsx gained a full keyboard shortcut handler reading live store state at event time (avoiding stale closures): Delete/Backspace deletes selection, Ctrl+D duplicates, Ctrl+A selects all items on the active layer, Arrow keys nudge ±1px (±10px with Shift), Escape clears selection. A contextual selection toolbar appears when items are selected, with Duplicate/Delete buttons and shortcut hint badges. workspace.css gained all supporting styles.",
+      "why_changed": "SF5-102 added multi-selection state; this packet (SF5-104) completes the command surface by surfacing that state as actionable UI and keyboard shortcuts, enabling users to efficiently transform multiple items without per-item operations.",
+      "what_to_watch": "The Ctrl+A handler uses selectItems (not selectAll) to avoid a TypeScript resolution edge-case where the dist .d.ts and project-reference compilation disagree on the SelectionState interface. Both achieve identical runtime behavior. If selectAll is reliably available post-merge, the Toolbar handler can be simplified.",
+      "what_affects_next": "Any downstream packet that adds canvas interaction or selection feedback should be aware that Toolbar now owns the global keyboard shortcut surface; additional shortcuts should be added there. The MixedNumericInput component is reusable for any future batch-edit property (color, opacity, etc.)."
+    }
+  }
+}

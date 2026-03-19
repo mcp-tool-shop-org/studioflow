@@ -429,6 +429,15 @@ input {
   background: var(--color-bg-panel-header);
   border-bottom: 1px solid var(--color-border);
   flex-shrink: 0;
+  gap: 8px;
+}
+
+/* Viewport controls group (zoom level + Fit/Reset/±) */
+.canvas-panel__controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
 }
 
 .canvas-panel__title {
@@ -453,7 +462,58 @@ input {
 .canvas-area {
   flex: 1;
   position: relative;
-  overflow: auto;
+  overflow: hidden;
+}
+
+/* Transform container — receives CSS zoom+pan transform */
+.canvas-transform {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+  /* width/height intentionally unconstrained — items use absolute positioning */
+}
+
+/* Marquee selection rectangle overlay (drawn in screen space) */
+.canvas-marquee {
+  position: absolute;
+  border: 1.5px dashed var(--color-accent);
+  background: rgba(108, 142, 251, 0.08);
+  pointer-events: none;
+  z-index: 20;
+}
+
+/* Zoom level badge in canvas header */
+.canvas-zoom-level {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  min-width: 36px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  user-select: none;
+}
+
+/* Canvas viewport control buttons (Fit, Reset, +, −) */
+.canvas-ctrl-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  background: transparent;
+  border: 1px solid transparent;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  min-width: 24px;
+}
+
+.canvas-ctrl-btn:hover {
+  background: var(--color-bg-item);
+  color: var(--color-text-primary);
+  border-color: var(--color-border-accent);
 }
 
 .canvas-empty {
@@ -1041,4 +1101,158 @@ input {
   min-width: 360px;
   max-width: 480px;
   width: 100%;
+}
+/* === SF5-104 Inspector multi-select styles === */
+  overflow: auto;
+
+/* ============================================================
+   Multi-Select Inspector
+   ============================================================ */
+
+/* Mixed-value indicator on a numeric input */
+.inspector-grid-field__input--mixed {
+  color: var(--color-text-muted);
+  border-color: var(--color-border-accent);
+  font-style: italic;
+}
+
+.inspector-grid-field__input--mixed::placeholder {
+  color: var(--color-text-muted);
+  font-style: normal;
+  font-size: 13px;
+}
+
+.inspector-grid-field__input--mixed:focus {
+  color: var(--color-text-primary);
+  font-style: normal;
+  border-color: var(--color-accent);
+}
+
+/* Small inline "mixed" badge shown next to section label */
+.inspector-mixed-badge {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: rgba(108, 142, 251, 0.15);
+  color: var(--color-accent);
+  border: 1px solid rgba(108, 142, 251, 0.3);
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+/* Selection count value */
+.inspector-multi-count {
+  font-weight: 600;
+  color: var(--color-accent);
+}
+
+/* Nudge button grid: 4 arrow buttons in a row */
+.inspector-nudge-grid {
+  display: flex;
+  gap: 4px;
+}
+
+.inspector-nudge-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 28px;
+  border-radius: 4px;
+  font-size: 14px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-app);
+  color: var(--color-text-secondary);
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.inspector-nudge-btn:hover {
+  background: var(--color-bg-item-hover);
+  color: var(--color-text-primary);
+  border-color: var(--color-border-accent);
+}
+
+.inspector-nudge-btn:active {
+  background: var(--color-accent-dim);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+/* Secondary action button (Duplicate) */
+.inspector-btn--secondary {
+  background: rgba(108, 142, 251, 0.1);
+  color: var(--color-accent);
+  border-color: rgba(108, 142, 251, 0.3);
+  width: 100%;
+  margin-bottom: 6px;
+}
+
+.inspector-btn--secondary:hover {
+  background: rgba(108, 142, 251, 0.2);
+  border-color: var(--color-accent);
+}
+
+/* Override multi-actions section to use column layout */
+.inspector-multi-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 0;
+}
+
+/* ============================================================
+   Toolbar — Keyboard Shortcut Hints & Selection Info
+   ============================================================ */
+
+/* Small <kbd> badge shown inside toolbar buttons */
+.toolbar__shortcut-hint {
+  display: inline-block;
+  font-family: inherit;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 1px 4px;
+  margin-left: 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--color-text-muted);
+  vertical-align: middle;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* Selection count label in the toolbar */
+.toolbar__selection-info {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-accent);
+  padding: 2px 6px;
+  background: rgba(108, 142, 251, 0.1);
+  border-radius: 4px;
+  border: 1px solid rgba(108, 142, 251, 0.25);
+}
+
+/* Danger variant for toolbar action buttons */
+.toolbar__btn--danger {
+  color: var(--color-danger);
+}
+
+.toolbar__btn--danger:hover:not(:disabled) {
+  background: rgba(224, 92, 92, 0.12);
+  border-color: rgba(224, 92, 92, 0.3);
+  color: var(--color-danger);
+}
+
+/* Selection actions group — right-aligned with accent indicator */
+.toolbar__section--selection {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }

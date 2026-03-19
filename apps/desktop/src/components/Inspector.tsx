@@ -3,6 +3,16 @@ import { useDocumentStore, useSelectionStore, useCommandStore } from '@studioflo
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
+/**
+ * Returns the single common value if every element in the array is equal,
+ * otherwise returns null (indicating "mixed" values across the selection).
+ */
+function getMixedValue<T>(values: T[]): T | null {
+  if (values.length === 0) return null;
+  const first = values[0];
+  return values.every((v) => v === first) ? first : null;
+}
+
 function NumericInput({
   label,
   value,
@@ -60,6 +70,62 @@ function NumericInput({
   );
 }
 
+/**
+ * Like NumericInput but accepts `null` to indicate mixed values across a
+ * multi-selection. Shows a "—" placeholder when mixed; committing a numeric
+ * value applies it to all selected items via the parent's onCommit handler.
+ */
+function MixedNumericInput({
+  label,
+  value,
+  onCommit,
+  min,
+}: {
+  label: string;
+  value: number | null; // null = mixed
+  onCommit: (v: number) => void;
+  min?: number;
+}) {
+  const localRef = useRef<HTMLInputElement>(null);
+  const isMixed = value === null;
+
+  const commit = useCallback(() => {
+    if (!localRef.current) return;
+    const raw = localRef.current.value;
+    const parsed = parseFloat(raw);
+    if (!isNaN(parsed)) {
+      const clamped = min !== undefined && parsed < min ? min : parsed;
+      onCommit(clamped);
+    } else if (!isMixed && localRef.current) {
+      // Reset to prop value on bad input (only when not mixed)
+      localRef.current.value = String(value);
+    }
+  }, [onCommit, value, min, isMixed]);
+
+  return (
+    <div className="inspector-grid-field">
+      <span className="inspector-grid-field__label">{label}</span>
+      <input
+        ref={localRef}
+        className={`inspector-grid-field__input${isMixed ? ' inspector-grid-field__input--mixed' : ''}`}
+        type="text"
+        defaultValue={isMixed ? '' : String(value)}
+        placeholder={isMixed ? '—' : undefined}
+        key={isMixed ? 'mixed' : String(value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') commit();
+          if (e.key === 'Escape' && localRef.current) {
+            localRef.current.value = isMixed ? '' : String(value);
+            localRef.current.blur();
+          }
+        }}
+        aria-label={label}
+      />
+    </div>
+  );
+}
+
 // ── main component ────────────────────────────────────────────────────────────
 
 export default function Inspector() {
@@ -77,6 +143,10 @@ export default function Inspector() {
 
   // ── layer-only selection (no items picked) ──────────────────────────────
   const layerOnlySelected = selectedLayer !== null && selectedItemIds.length === 0;
+
+  // ── multi-select derived values ─────────────────────────────────────────
+  const multiX = selectedItems.length > 1 ? getMixedValue(selectedItems.map((i) => i.x)) : null;
+  const multiY = selectedItems.length > 1 ? getMixedValue(selectedItems.map((i) => i.y)) : null;
 
   // ── layer name editing ──────────────────────────────────────────────────
   const layerNameRef = useRef<HTMLInputElement>(null);
@@ -126,7 +196,7 @@ export default function Inspector() {
     [commitItemRename, singleItem],
   );
 
-  // ── numeric field commit helpers ────────────────────────────────────────
+  // ── numeric field commit helpers (single item) ──────────────────────────
   const commitMove = useCallback(
     (axis: 'x' | 'y', v: number) => {
       if (!singleItem || !selectedLayerId) return;
@@ -177,6 +247,63 @@ export default function Inspector() {
       dispatch('item:delete', { layerId: selectedLayerId, itemId });
     }
   }, [dispatch, selectedLayerId, selectedItemIds]);
+
+  // ── batch move helpers (multi-select) ───────────────────────────────────
+  const batchMoveX = useCallback(
+    (v: number) => {
+      if (!selectedLayerId) return;
+      for (const item of selectedItems) {
+        dispatch('item:move', { layerId: selectedLayerId, itemId: item.id, x: v, y: item.y });
+      }
+    },
+    [dispatch, selectedLayerId, selectedItems],
+  );
+
+  const batchMoveY = useCallback(
+    (v: number) => {
+      if (!selectedLayerId) return;
+      for (const item of selectedItems) {
+        dispatch('item:move', { layerId: selectedLayerId, itemId: item.id, x: item.x, y: v });
+      }
+    },
+    [dispatch, selectedLayerId, selectedItems],
+  );
+
+  // ── nudge all selected items ────────────────────────────────────────────
+  const nudgeAll = useCallback(
+    (dx: number, dy: number) => {
+      if (!selectedLayerId) return;
+      for (const item of selectedItems) {
+        dispatch('item:move', {
+          layerId: selectedLayerId,
+          itemId: item.id,
+          x: item.x + dx,
+          y: item.y + dy,
+        });
+      }
+    },
+    [dispatch, selectedLayerId, selectedItems],
+  );
+
+  // ── duplicate all selected items ────────────────────────────────────────
+  const duplicateSelected = useCallback(() => {
+    if (!selectedLayerId) return;
+    for (const item of selectedItems) {
+      dispatch('item:add', {
+        layerId: selectedLayerId,
+        item: {
+          name: `${item.name} copy`,
+          type: item.type,
+          x: item.x + 20,
+          y: item.y + 20,
+          width: item.width,
+          height: item.height,
+          rotation: item.rotation,
+          data: { ...item.data },
+        },
+      });
+    }
+  }, [dispatch, selectedLayerId, selectedItems]);
 
   // ── render ──────────────────────────────────────────────────────────────
   return (
@@ -347,23 +474,96 @@ export default function Inspector() {
         )}
 
         {/* ── MULTI ITEM SELECTED ── */}
-        {selectedItems.length > 1 && !singleItem && (
-          <div className="inspector-section">
-            <div className="inspector-section__label">Selection</div>
-            <div className="inspector-field">
-              <span className="inspector-field__label">Count</span>
-              <span className="inspector-field__value">{selectedItems.length} items</span>
+        {selectedItems.length > 1 && (
+          <>
+            <div className="inspector-section">
+              <div className="inspector-section__label">Selection</div>
+              <div className="inspector-field">
+                <span className="inspector-field__label">Count</span>
+                <span className="inspector-field__value inspector-multi-count">
+                  {selectedItems.length} items
+                </span>
+              </div>
             </div>
-            <div className="inspector-multi-actions">
+
+            <div className="inspector-section">
+              <div className="inspector-section__label">
+                Position
+                {(multiX === null || multiY === null) && (
+                  <span className="inspector-mixed-badge" title="Values differ across selection">
+                    mixed
+                  </span>
+                )}
+              </div>
+              <div className="inspector-grid inspector-grid--2col">
+                <MixedNumericInput
+                  label="X"
+                  value={multiX}
+                  onCommit={batchMoveX}
+                />
+                <MixedNumericInput
+                  label="Y"
+                  value={multiY}
+                  onCommit={batchMoveY}
+                />
+              </div>
+            </div>
+
+            <div className="inspector-section">
+              <div className="inspector-section__label">Nudge</div>
+              <div className="inspector-nudge-grid">
+                <button
+                  className="inspector-nudge-btn"
+                  aria-label="Nudge left"
+                  title="Move left 10px"
+                  onClick={() => nudgeAll(-10, 0)}
+                >
+                  ←
+                </button>
+                <button
+                  className="inspector-nudge-btn"
+                  aria-label="Nudge right"
+                  title="Move right 10px"
+                  onClick={() => nudgeAll(10, 0)}
+                >
+                  →
+                </button>
+                <button
+                  className="inspector-nudge-btn"
+                  aria-label="Nudge up"
+                  title="Move up 10px"
+                  onClick={() => nudgeAll(0, -10)}
+                >
+                  ↑
+                </button>
+                <button
+                  className="inspector-nudge-btn"
+                  aria-label="Nudge down"
+                  title="Move down 10px"
+                  onClick={() => nudgeAll(0, 10)}
+                >
+                  ↓
+                </button>
+              </div>
+            </div>
+
+            <div className="inspector-section inspector-multi-actions">
+              <button
+                className="inspector-btn inspector-btn--secondary"
+                onClick={duplicateSelected}
+                aria-label="Duplicate selected items"
+              >
+                Duplicate Selected ({selectedItems.length})
+              </button>
               <button
                 className="inspector-btn inspector-btn--danger"
                 onClick={deleteAllSelected}
-                aria-label="Delete all selected items"
+                aria-label="Delete selected items"
               >
-                Delete All ({selectedItems.length})
+                Delete Selected ({selectedItems.length})
               </button>
             </div>
-          </div>
+          </>
         )}
 
       </div>

@@ -1,5 +1,10 @@
-import { useRef } from 'react';
-import { useDocumentStore, useSelectionStore, useCommandStore } from '@studioflow/state';
+import { useRef, useState } from 'react';
+import {
+  useDocumentStore,
+  useSelectionStore,
+  useCommandStore,
+  useViewportStore,
+} from '@studioflow/state';
 
 let itemCounter = 0;
 
@@ -22,7 +27,7 @@ function makeDefaultItem(layerId: string) {
   };
 }
 
-interface DragState {
+interface ItemDragState {
   itemId: string;
   layerId: string;
   startMouseX: number;
@@ -31,19 +36,57 @@ interface DragState {
   startItemY: number;
 }
 
+interface MarqueeBox {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 export default function Canvas() {
   const layers = useDocumentStore((s) => s.layers);
   const { selectedLayerId, selectedItemIds, selectItem } = useSelectionStore();
   const dispatch = useCommandStore((s) => s.dispatch);
+  const { zoom, panX, panY, zoomIn, zoomOut, zoomReset, fitToCanvas } = useViewportStore();
 
-  // Drag state tracked in a ref to avoid re-renders during drag
-  const dragRef = useRef<DragState | null>(null);
+  // Item drag tracked in a ref to avoid re-renders during drag
+  const itemDragRef = useRef<ItemDragState | null>(null);
+  const canvasAreaRef = useRef<HTMLDivElement>(null);
+  const wasDraggingRef = useRef(false);
+
+  const [marquee, setMarquee] = useState<MarqueeBox | null>(null);
 
   const selectedLayer = layers.find((l) => l.id === selectedLayerId) ?? null;
-
-  // Only render items from visible layers; the canvas shows all visible layers' items
-  // but interaction is constrained to the selected layer.
   const visibleLayers = layers.filter((l) => l.visible);
+
+  // ----------------------------------------------------------------
+  // Helpers
+  // ----------------------------------------------------------------
+  function zoomPercent() {
+    return `${Math.round(zoom * 100)}%`;
+  }
+
+  function handleFitToCanvas() {
+    const el = canvasAreaRef.current;
+    if (!el) return;
+
+    const { layers: currentLayers } = useDocumentStore.getState();
+    const visItems = currentLayers
+      .filter((l) => l.visible)
+      .flatMap((l) => l.items);
+
+    if (visItems.length === 0) return;
+
+    const { width, height } = el.getBoundingClientRect();
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const item of visItems) {
+      if (item.x < minX) minX = item.x;
+      if (item.y < minY) minY = item.y;
+      if (item.x + item.width > maxX) maxX = item.x + item.width;
+      if (item.y + item.height > maxY) maxY = item.y + item.height;
+    }
+    fitToCanvas(width, height, { x: minX, y: minY, width: maxX - minX, height: maxY - minY });
+  }
 
   function handleAddItem() {
     if (!selectedLayerId) return;
@@ -53,17 +96,138 @@ export default function Canvas() {
 
   function handleItemClick(e: React.MouseEvent, itemId: string, layerLocked: boolean) {
     e.stopPropagation();
-    if (layerLocked) return; // locked layers: no item selection
+    if (layerLocked) return;
     selectItem(itemId);
   }
 
   function handleCanvasClick() {
-    // Clear item selection on empty canvas click
+    if (wasDraggingRef.current) {
+      wasDraggingRef.current = false;
+      return;
+    }
     selectItem('');
   }
 
   // ----------------------------------------------------------------
-  // Drag-to-move
+  // Wheel zoom
+  // ----------------------------------------------------------------
+  function handleWheel(e: React.WheelEvent) {
+    e.preventDefault();
+    if (e.deltaY < 0) {
+      zoomIn();
+    } else {
+      zoomOut();
+    }
+  }
+
+  // ----------------------------------------------------------------
+  // Canvas mousedown: start pan (middle-click / Alt+left) or marquee
+  // ----------------------------------------------------------------
+  function handleCanvasMouseDown(e: React.MouseEvent<HTMLDivElement>) {
+    const isPan = e.button === 1 || (e.button === 0 && e.altKey);
+
+    if (isPan) {
+      e.preventDefault();
+      let lastX = e.clientX;
+      let lastY = e.clientY;
+
+      function onPanMove(me: MouseEvent) {
+        const dx = me.clientX - lastX;
+        const dy = me.clientY - lastY;
+        if (Math.abs(dx) > 0 || Math.abs(dy) > 0) {
+          wasDraggingRef.current = true;
+        }
+        useViewportStore.getState().panBy(dx, dy);
+        lastX = me.clientX;
+        lastY = me.clientY;
+      }
+
+      function onPanUp() {
+        window.removeEventListener('mousemove', onPanMove);
+        window.removeEventListener('mouseup', onPanUp);
+      }
+
+      window.addEventListener('mousemove', onPanMove);
+      window.addEventListener('mouseup', onPanUp);
+      return;
+    }
+
+    // Left-click on empty canvas → start marquee selection
+    if (e.button === 0 && !e.altKey) {
+      const areaEl = canvasAreaRef.current;
+      if (!areaEl) return;
+      const areaRect = areaEl.getBoundingClientRect();
+      const startX = e.clientX - areaRect.left;
+      const startY = e.clientY - areaRect.top;
+
+      function onMarqueeMove(me: MouseEvent) {
+        const nowRect = canvasAreaRef.current?.getBoundingClientRect();
+        if (!nowRect) return;
+        const cx = me.clientX - nowRect.left;
+        const cy = me.clientY - nowRect.top;
+        const dx = cx - startX;
+        const dy = cy - startY;
+
+        if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+          wasDraggingRef.current = true;
+          setMarquee({
+            x: Math.min(startX, cx),
+            y: Math.min(startY, cy),
+            width: Math.abs(dx),
+            height: Math.abs(dy),
+          });
+        }
+      }
+
+      function onMarqueeUp(me: MouseEvent) {
+        const nowRect = canvasAreaRef.current?.getBoundingClientRect();
+        if (nowRect && wasDraggingRef.current) {
+          const cx = me.clientX - nowRect.left;
+          const cy = me.clientY - nowRect.top;
+          const sx = Math.min(startX, cx);
+          const sy = Math.min(startY, cy);
+          const sw = Math.abs(cx - startX);
+          const sh = Math.abs(cy - startY);
+
+          if (sw > 3 && sh > 3) {
+            const { panX: px, panY: py, zoom: z } = useViewportStore.getState();
+            const contentX = (sx - px) / z;
+            const contentY = (sy - py) / z;
+            const contentW = sw / z;
+            const contentH = sh / z;
+
+            const { layers: docLayers } = useDocumentStore.getState();
+            const visItems = docLayers
+              .filter((l) => l.visible)
+              .flatMap((l) =>
+                l.items.map((item) => ({
+                  id: item.id,
+                  x: item.x,
+                  y: item.y,
+                  width: item.width,
+                  height: item.height,
+                })),
+              );
+
+            useSelectionStore.getState().selectByRect(
+              { x: contentX, y: contentY, width: contentW, height: contentH },
+              visItems,
+            );
+          }
+        }
+
+        setMarquee(null);
+        window.removeEventListener('mousemove', onMarqueeMove);
+        window.removeEventListener('mouseup', onMarqueeUp);
+      }
+
+      window.addEventListener('mousemove', onMarqueeMove);
+      window.addEventListener('mouseup', onMarqueeUp);
+    }
+  }
+
+  // ----------------------------------------------------------------
+  // Drag-to-move items
   // ----------------------------------------------------------------
   function handleItemMouseDown(
     e: React.MouseEvent,
@@ -77,7 +241,7 @@ export default function Canvas() {
     e.stopPropagation();
     e.preventDefault();
 
-    dragRef.current = {
+    itemDragRef.current = {
       itemId,
       layerId,
       startMouseX: e.clientX,
@@ -89,18 +253,18 @@ export default function Canvas() {
     // Select the item on mousedown so it is immediately highlighted
     selectItem(itemId);
 
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
+    window.addEventListener('mousemove', handleItemMouseMove);
+    window.addEventListener('mouseup', handleItemMouseUp);
   }
 
-  function handleMouseMove(e: MouseEvent) {
-    const drag = dragRef.current;
+  function handleItemMouseMove(e: MouseEvent) {
+    const drag = itemDragRef.current;
     if (!drag) return;
 
-    const dx = e.clientX - drag.startMouseX;
-    const dy = e.clientY - drag.startMouseY;
+    const currentZoom = useViewportStore.getState().zoom;
+    const dx = (e.clientX - drag.startMouseX) / currentZoom;
+    const dy = (e.clientY - drag.startMouseY) / currentZoom;
 
-    // Live update via item:move command so the canvas re-renders at the new position
     dispatch('item:move', {
       layerId: drag.layerId,
       itemId: drag.itemId,
@@ -109,15 +273,16 @@ export default function Canvas() {
     });
   }
 
-  function handleMouseUp(e: MouseEvent) {
-    const drag = dragRef.current;
+  function handleItemMouseUp(e: MouseEvent) {
+    const drag = itemDragRef.current;
     if (!drag) {
-      cleanup();
+      cleanupItemDrag();
       return;
     }
 
-    const dx = e.clientX - drag.startMouseX;
-    const dy = e.clientY - drag.startMouseY;
+    const currentZoom = useViewportStore.getState().zoom;
+    const dx = (e.clientX - drag.startMouseX) / currentZoom;
+    const dy = (e.clientY - drag.startMouseY) / currentZoom;
 
     dispatch('item:move', {
       layerId: drag.layerId,
@@ -126,13 +291,13 @@ export default function Canvas() {
       y: drag.startItemY + dy,
     });
 
-    dragRef.current = null;
-    cleanup();
+    itemDragRef.current = null;
+    cleanupItemDrag();
   }
 
-  function cleanup() {
-    window.removeEventListener('mousemove', handleMouseMove);
-    window.removeEventListener('mouseup', handleMouseUp);
+  function cleanupItemDrag() {
+    window.removeEventListener('mousemove', handleItemMouseMove);
+    window.removeEventListener('mouseup', handleItemMouseUp);
   }
 
   return (
@@ -147,20 +312,54 @@ export default function Canvas() {
             )}
           </span>
         )}
+        <div className="canvas-panel__controls">
+          <span className="canvas-zoom-level" aria-label="Zoom level">{zoomPercent()}</span>
+          <button
+            className="canvas-ctrl-btn"
+            onClick={handleFitToCanvas}
+            title="Fit to canvas"
+            aria-label="Fit to canvas"
+          >
+            Fit
+          </button>
+          <button
+            className="canvas-ctrl-btn"
+            onClick={zoomReset}
+            title="Reset zoom"
+            aria-label="Reset zoom"
+          >
+            Reset
+          </button>
+          <button
+            className="canvas-ctrl-btn"
+            onClick={zoomIn}
+            aria-label="Zoom in"
+          >
+            +
+          </button>
+          <button
+            className="canvas-ctrl-btn"
+            onClick={zoomOut}
+            aria-label="Zoom out"
+          >
+            −
+          </button>
+        </div>
       </div>
 
-      <div className="canvas-area" onClick={handleCanvasClick}>
-        {visibleLayers.length === 0 ? (
-          <div className="canvas-empty">
-            <span className="canvas-empty__icon">⬚</span>
-            <span>
-              {layers.length === 0
-                ? 'Select a layer to view its contents'
-                : 'All layers are hidden'}
-            </span>
-          </div>
-        ) : (
-          visibleLayers.map((layer) =>
+      <div
+        className="canvas-area"
+        ref={canvasAreaRef}
+        onClick={handleCanvasClick}
+        onWheel={handleWheel}
+        onMouseDown={handleCanvasMouseDown}
+      >
+        {/* Transform container — viewport zoom+pan applied here */}
+        <div
+          className="canvas-transform"
+          style={{ transform: `translate(${panX}px, ${panY}px) scale(${zoom})` }}
+        >
+          {visibleLayers.flatMap((layer) =>
             layer.items.map((item) => {
               const isSelected = selectedItemIds.includes(item.id);
               const isLocked = layer.locked;
@@ -202,7 +401,34 @@ export default function Canvas() {
                 </div>
               );
             })
-          )
+          )}
+        </div>
+
+        {/* Empty state — shown outside transform so it fills the viewport */}
+        {visibleLayers.length === 0 && (
+          <div className="canvas-empty">
+            <span className="canvas-empty__icon">⬚</span>
+            <span>
+              {layers.length === 0
+                ? 'Select a layer to view its contents'
+                : 'All layers are hidden'}
+            </span>
+          </div>
+        )}
+
+        {/* Marquee selection overlay (screen-space, outside the transform) */}
+        {marquee && (
+          <div
+            className="canvas-marquee"
+            aria-hidden="true"
+            data-testid="canvas-marquee"
+            style={{
+              left: marquee.x,
+              top: marquee.y,
+              width: marquee.width,
+              height: marquee.height,
+            }}
+          />
         )}
 
         {selectedLayer && !selectedLayer.locked && (

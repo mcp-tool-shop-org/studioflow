@@ -1,0 +1,27 @@
+{
+  "writeback": {
+    "module": "apps/desktop/src/components",
+    "change_type": "feature",
+    "summary": "Wired viewport zoom/pan and multi-selection marquee into Canvas component with CSS transform container, wheel zoom, Alt/middle-click pan, marquee selection overlay, and Fit/Reset/zoom controls in the canvas header.",
+    "files_touched": [
+      "apps/desktop/src/components/Canvas.tsx",
+      "apps/desktop/src/styles/workspace.css",
+      "apps/desktop/src/components/__tests__/Canvas.test.tsx"
+    ],
+    "contract_delta": "none",
+    "risks": "Item drag coordinates are now divided by current zoom level to translate screen-space deltas back to content-space; if zoom is near-zero this could produce large values (zoom is clamped to MIN_ZOOM=0.1 by viewportStore so maximum amplification is 10x). The marquee selectByRect conversion reads panX/panY/zoom from viewportStore.getState() at mouseup time to avoid stale closure issues.",
+    "dependencies_affected": ["packages/state"],
+    "tests_added": [
+      "apps/desktop/src/components/__tests__/Canvas.test.tsx"
+    ],
+    "docs_required": false,
+    "architecture_impact": null,
+    "relationship_suggestions": [],
+    "prose": {
+      "what_changed": "Canvas.tsx now imports useViewportStore and applies zoom/pan as a CSS transform (translate + scale) to a new .canvas-transform container div that wraps all canvas items. An onWheel handler calls zoomIn/zoomOut. Middle-click or Alt+left-click initiates a pan drag that calls viewportStore.panBy with per-frame deltas. Left-click drag on empty canvas draws a .canvas-marquee overlay (dashed cyan border, semi-transparent fill) and on mouseup converts the screen-space rectangle back to content coordinates (subtracting panX/Y, dividing by zoom) before calling selectionStore.selectByRect. The header now shows a zoom level badge (e.g. '100%') and Fit/Reset/+/− buttons. workspace.css received .canvas-transform, .canvas-marquee, .canvas-zoom-level, .canvas-ctrl-btn, and .canvas-panel__controls rules. A 18-test suite was created covering renders, zoom controls, item rendering, selected-item styling, marquee overlay lifecycle, and empty-state display.",
+      "why_changed": "SF5-101 and SF5-102 delivered the viewport and selection state stores but they were not yet wired to any UI. This task closes that loop so zoom, pan, and marquee select are fully interactive in the desktop canvas.",
+      "what_to_watch": "The .canvas-area overflow is now hidden (was auto) so items outside the visible viewport are clipped — panning reveals them. The empty-state element was moved outside the .canvas-transform div so it always fills the viewport regardless of zoom. The item drag handler divides mouse deltas by zoom so dragged items track the pointer correctly at non-1.0 zoom levels.",
+      "what_affects_next": "SF5-104 or any Inspector-level work can call selectionStore.getSelectionBounds() to compute selection handle positions in content space. Any command that acts on selectedItemIds (duplicate/delete/nudge) is unaffected — the selection API is backward compatible. The canvas-transform approach means any future canvas feature (grid, rulers, guides) should also be placed inside .canvas-transform to participate in the viewport transform."
+    }
+  }
+}

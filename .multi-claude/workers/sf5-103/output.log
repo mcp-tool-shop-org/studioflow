@@ -1,0 +1,31 @@
+All tasks complete. Here's a summary of what was delivered:
+
+## SF5-103 — Canvas Interaction UX ✅
+
+### What was built
+
+**`Canvas.tsx` (modified)**
+- Imports `useViewportStore` for zoom/pan state
+- **Wheel zoom**: `onWheel` on the canvas area calls `zoomIn()`/`zoomOut()` based on `deltaY`
+- **Pan drag**: Middle-click or Alt+left-click starts a pan drag that calls `viewportStore.panBy()` with per-frame mouse deltas
+- **Viewport transform**: A new `.canvas-transform` wrapper div applies `translate(${panX}px, ${panY}px) scale(${zoom})` with `transform-origin: 0 0`
+- **Marquee selection**: Left-click drag on empty canvas draws a `.canvas-marquee` overlay rectangle; on mouseup converts screen-space coords to content-space (dividing by zoom, subtracting pan) and calls `selectionStore.selectByRect()`
+- **Selected items**: Existing `canvas-item--selected` (2px cyan border) verified working with multi-select
+- **Header controls**: Zoom level badge (`100%`), Fit, Reset, +, − buttons
+- **Item drag fix**: Mouse deltas now divided by `zoom` so items track pointer correctly at non-1× zoom
+
+**`workspace.css` (modified)**
+- `.canvas-transform` — absolute transform container with `transform-origin: 0 0`
+- `.canvas-marquee` — dashed cyan border, semi-transparent fill, `pointer-events: none`
+- `.canvas-zoom-level` — tabular-nums zoom badge
+- `.canvas-ctrl-btn` — viewport control button style
+- `.canvas-panel__controls` — flex row for controls in header
+
+**`Canvas.test.tsx` (new)** — 18 tests passing:
+- Render / aria-label / transform container presence
+- Zoom in/out/reset buttons update store state
+- Zoom level display updates reactively
+- Fit to canvas button exists
+- Items render from visible layers, selected items get `--selected` class
+- Marquee overlay appears on drag and disappears on mouseup
+- Empty state shows/hides correctly

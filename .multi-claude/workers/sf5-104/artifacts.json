@@ -1,0 +1,14 @@
+{
+  "files_created": [
+    "apps/desktop/src/components/__tests__/Inspector.test.tsx"
+  ],
+  "files_modified": [
+    "apps/desktop/src/components/Inspector.tsx",
+    "apps/desktop/src/components/Toolbar.tsx",
+    "apps/desktop/src/styles/workspace.css"
+  ],
+  "files_deleted": [],
+  "test_files": [
+    "apps/desktop/src/components/__tests__/Inspector.test.tsx"
+  ]
+}
