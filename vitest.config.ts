@@ -8,6 +8,10 @@ export default defineConfig({
     alias: {
       '@studioflow/domain': resolve(__dirname, 'packages/domain/src/index.ts'),
       '@studioflow/state': resolve(__dirname, 'packages/state/src/index.ts'),
+      '@tauri-apps/plugin-dialog': resolve(
+        __dirname,
+        'packages/state/src/__tests__/__mocks__/tauri-plugin-dialog.ts',
+      ),
     },
   },
   test: {

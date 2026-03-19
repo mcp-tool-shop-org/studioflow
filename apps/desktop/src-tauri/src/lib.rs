@@ -10,6 +10,13 @@ pub fn run() {
             commands::layer::rename_layer,
             commands::layer::toggle_layer_visibility,
             commands::layer::delete_layer,
+            commands::project::new_project,
+            commands::project::save_project,
+            commands::project::save_project_as,
+            commands::project::load_project,
+            commands::project::validate_project_file,
+            commands::project::get_recent_projects,
+            commands::project::add_recent_project,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

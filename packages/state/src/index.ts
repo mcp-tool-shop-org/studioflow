@@ -9,3 +9,8 @@ export type { WorkspaceStoreState } from './workspaceStore.js';
 
 export { useCommandStore } from './commandStore.js';
 export type { CommandStoreState } from './commandStore.js';
+
+export { usePersistenceStore } from './persistenceStore.js';
+export type { PersistenceStoreState } from './persistenceStore.js';
+
+export { initDirtyTracker, resetDirtyTracker } from './dirtyTracker.js';

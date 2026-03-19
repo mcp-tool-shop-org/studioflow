@@ -6,7 +6,12 @@ export type CommandType =
   | 'item:add'
   | 'item:move'
   | 'item:delete'
-  | 'item:update';
+  | 'item:update'
+  | 'project:new'
+  | 'project:save'
+  | 'project:save-as'
+  | 'project:open'
+  | 'project:close';
 
 export interface Command {
   id: string;

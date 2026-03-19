@@ -111,6 +111,14 @@ function executeCommand(
         return { success: true };
       }
 
+      // Persistence commands — routed through command system but handled by persistenceStore
+      case 'project:new':
+      case 'project:save':
+      case 'project:save-as':
+      case 'project:open':
+      case 'project:close':
+        return { success: true, data: { handler: 'persistence' } };
+
       default: {
         const _exhaustive: never = type;
         return { success: false, error: `Unknown command type: ${_exhaustive}` };

@@ -75,6 +75,16 @@ input {
 }
 
 /* ============================================================
+   Toolbar Shell (wraps toolbar + project bar)
+   ============================================================ */
+.toolbar-shell {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+/* ============================================================
    Toolbar
    ============================================================ */
 .toolbar {
@@ -96,6 +106,10 @@ input {
   letter-spacing: 0.02em;
   color: var(--color-text-primary);
   margin-right: 8px;
+}
+
+.toolbar__title--dirty {
+  color: var(--color-accent);
 }
 
 .toolbar__separator {
@@ -581,4 +595,243 @@ input {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-text-muted);
+}
+
+/* ============================================================
+   Project Bar
+   ============================================================ */
+.project-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  min-height: 32px;
+  background: var(--color-bg-panel-header);
+  border-bottom: 1px solid var(--color-border);
+  padding: 0 12px;
+  flex-shrink: 0;
+}
+
+.project-bar__name-area {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+
+.project-bar__name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+}
+
+.project-bar__dirty-dot {
+  font-size: 10px;
+  color: var(--color-accent);
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.project-bar__path {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 220px;
+}
+
+.project-bar__sep {
+  width: 1px;
+  height: 18px;
+  background: var(--color-border);
+  margin: 0 4px;
+  flex-shrink: 0;
+}
+
+.project-bar__actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.project-bar__btn {
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  background: transparent;
+  border: 1px solid transparent;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.project-bar__btn:hover:not(:disabled) {
+  background: var(--color-bg-item);
+  color: var(--color-text-primary);
+  border-color: var(--color-border-accent);
+}
+
+.project-bar__btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.project-bar__btn--dirty {
+  color: var(--color-accent);
+}
+
+.project-bar__spinner {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  animation: fade-in 0.2s ease;
+}
+
+.project-bar__error {
+  font-size: 11px;
+  color: var(--color-danger);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 260px;
+  padding: 2px 6px;
+  background: rgba(224, 92, 92, 0.1);
+  border-radius: 4px;
+}
+
+/* ============================================================
+   Recent Projects
+   ============================================================ */
+.recent-projects {
+  display: flex;
+  flex-direction: column;
+  min-width: 320px;
+}
+
+.recent-projects--inline {
+  min-width: unset;
+}
+
+.recent-projects__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.recent-projects__title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+}
+
+.recent-projects__close-btn {
+  font-size: 18px;
+  color: var(--color-text-muted);
+  line-height: 1;
+  padding: 0 4px;
+  border-radius: 4px;
+  transition: color 0.15s, background 0.15s;
+}
+
+.recent-projects__close-btn:hover {
+  color: var(--color-text-primary);
+  background: var(--color-bg-item);
+}
+
+.recent-projects__empty {
+  padding: 24px 14px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.recent-projects__list {
+  list-style: none;
+  padding: 4px 0;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.recent-projects__item {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.recent-projects__item:last-child {
+  border-bottom: none;
+}
+
+.recent-projects__item-btn {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: 8px 14px;
+  text-align: left;
+  transition: background 0.1s;
+}
+
+.recent-projects__item-btn:hover:not(:disabled) {
+  background: var(--color-bg-item-hover);
+}
+
+.recent-projects__item-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.recent-projects__item-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.recent-projects__item-path {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 320px;
+}
+
+.recent-projects__item-date {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+}
+
+/* Modal / overlay variant */
+.recent-projects__overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.recent-projects__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.recent-projects__modal {
+  position: relative;
+  z-index: 1;
+  background: var(--color-bg-panel);
+  border: 1px solid var(--color-border-accent);
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  min-width: 360px;
+  max-width: 480px;
+  width: 100%;
 }
