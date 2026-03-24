@@ -5,7 +5,8 @@
     "dev": "cd apps/desktop && pnpm tauri dev",
     "build": "pnpm -r build",
     "test": "vitest run",
-    "typecheck": "pnpm -r typecheck"
+    "typecheck": "pnpm -r typecheck",
+    "verify": "pnpm typecheck && pnpm test && echo '✓ verify passed'"
   },
   "devDependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.2.79",
