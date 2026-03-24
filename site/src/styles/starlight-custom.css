@@ -1,0 +1,16 @@
+:root {
+  --sl-color-accent-low: #022c22;
+  --sl-color-accent: #34d399;
+  --sl-color-accent-high: #6ee7b7;
+  --sl-color-bg: #09090b;
+  --sl-color-bg-sidebar: #0a0a0a;
+  --sl-color-hairline: #27272a;
+  --sl-color-white: #fafafa;
+  --sl-color-gray-1: #e4e4e7;
+  --sl-color-gray-2: #a1a1aa;
+  --sl-color-gray-3: #71717a;
+  --sl-color-gray-4: #3f3f46;
+  --sl-color-gray-5: #27272a;
+  --sl-color-gray-6: #18181b;
+  --sl-color-black: #09090b;
+}

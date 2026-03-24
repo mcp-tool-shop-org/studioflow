@@ -4,3 +4,4 @@ target/
 *.tsbuildinfo
 .vite/
 .claude/worktrees/
+site/.astro/
