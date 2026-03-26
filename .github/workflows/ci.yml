@@ -34,7 +34,7 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - name: Build domain types (needed by downstream packages)
-        run: pnpm --filter @studioflow/domain build
+      - name: Build library packages (needed by apps for typecheck)
+        run: pnpm --filter @studioflow/domain --filter @studioflow/state build
       - run: pnpm typecheck
       - run: pnpm test
