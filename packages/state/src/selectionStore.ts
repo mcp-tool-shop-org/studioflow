@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { SelectionMode, SelectionRect, SelectionBounds } from '../../domain/src/selection.js';
+import type { SelectionMode, SelectionRect, SelectionBounds } from '@studioflow/domain';
 import { useDocumentStore } from './documentStore.js';
 
 export interface SelectionState {

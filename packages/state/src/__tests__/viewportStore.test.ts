@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useViewportStore } from '../viewportStore.js';
-import { ZOOM_STEP, MIN_ZOOM, MAX_ZOOM, DEFAULT_ZOOM } from '../../../domain/src/viewport.js';
+import { ZOOM_STEP, MIN_ZOOM, MAX_ZOOM, DEFAULT_ZOOM } from '@studioflow/domain';
 
 beforeEach(() => {
   useViewportStore.getState().reset();

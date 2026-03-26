@@ -4,8 +4,8 @@ import {
   MIN_ZOOM,
   MAX_ZOOM,
   DEFAULT_ZOOM,
-} from '../../domain/src/viewport.js';
-import type { ViewportState, ContentBounds } from '../../domain/src/viewport.js';
+} from '@studioflow/domain';
+import type { ViewportState, ContentBounds } from '@studioflow/domain';
 
 export interface ViewportStoreState extends ViewportState {
   // Actions
