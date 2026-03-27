@@ -41,7 +41,9 @@ The `pnpm dev` command starts the Tauri development window with hot reload. You 
 
 **Undo/Redo** -- The history store keeps up to 100 snapshots. Press Ctrl+Z to undo and Ctrl+Shift+Z to redo. Each undoable command records a full document snapshot before execution, so undo restores the exact previous state.
 
-**Viewport** -- The canvas supports zoom (0.1x to 5.0x) and pan. Use the mouse wheel to zoom, middle-click or Alt+left-click to pan, and the toolbar controls to fit content or reset zoom.
+**Selection modes** -- Clicking an item replaces the current selection. Hold Ctrl and click to toggle items in/out of the selection. Drag on empty canvas for marquee (rubber-band) selection that picks up all items within the rectangle.
+
+**Viewport** -- The canvas supports zoom (0.1x to 5.0x) and pan. Use the mouse wheel to zoom, middle-click drag or Alt+left-click drag to pan, and the toolbar controls to fit content or reset zoom.
 
 ## 4. Project structure walkthrough
 
@@ -60,6 +62,8 @@ studioflow/
   site/                       Astro Starlight documentation site
     src/content/docs/         Handbook pages (this site)
 ```
+
+**Site directory** contains the Astro Starlight documentation site (the handbook you are reading now).
 
 **Domain package** defines the shape of every concept (what a Layer looks like, what commands exist, what a project file contains). It has no dependencies and no side effects.
 
@@ -85,7 +89,9 @@ studioflow/
 - **Resize** -- Select an item and change Width/Height values in the Inspector panel.
 - **Color** -- Use the Fill and Stroke color pickers in the Inspector to change item colors.
 - **Delete** -- Press Delete or Backspace, or click "Delete Item" in the Inspector.
-- **Duplicate** -- Press Ctrl+D or click "Duplicate" in the toolbar to copy selected items.
+- **Duplicate** -- Press Ctrl+D or click "Duplicate" in the toolbar to copy selected items (offset +20px on each axis).
+
+For the full list of keyboard shortcuts, see the [Reference](/studioflow/handbook/reference/) page.
 
 ### Managing layers
 

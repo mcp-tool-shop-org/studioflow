@@ -29,7 +29,7 @@ Pure TypeScript types with no runtime dependencies. Each file defines the shape 
 | `selection.ts` | `SelectionMode` (replace/add/toggle), `SelectionRect` for marquee selection, `SelectionBounds` |
 | `persistence.ts` | `ProjectFile` schema (version 1), `RecentProject`, `DirtyState`, validation result types |
 | `workspace.ts` | `PanelId` (layers/canvas/inspector/toolbar), `PanelVisibility`, `WorkspaceState` |
-| `color.ts` | `ColorValue` type (hex strings), default fill (`#2a2a38`) and stroke values |
+| `color.ts` | `ColorValue` type (hex strings), default fill (`#2a2a38`), default stroke (`undefined` -- no stroke) |
 
 ## State layer (`packages/state`)
 
