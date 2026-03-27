@@ -25,10 +25,13 @@ pnpm dev
 ```
 studioflow/
   apps/desktop/          Tauri v2 + React desktop app
-    src/components/      Canvas, Inspector, Toolbar, Workspace, LayersPanel
-    src-tauri/           Rust backend
-  packages/domain/       Domain types (layer, project, command, viewport, history)
-  packages/state/        Zustand stores (document, selection, viewport, command, history)
+    src/components/      Canvas, Inspector, Toolbar, LayersPanel,
+                         Workspace, ProjectBar, ColorPicker, RecentProjects
+    src-tauri/           Rust backend (project persistence, layer ops, validation)
+  packages/domain/       Pure TypeScript types (layer, project, command, viewport,
+                         history, selection, persistence, workspace, color)
+  packages/state/        Zustand stores (document, selection, viewport, command,
+                         history, persistence, workspace, dirtyTracker)
 ```
 
 ## Stack
@@ -37,7 +40,7 @@ studioflow/
 - **React** — UI components
 - **Zustand** — State management with domain-driven stores
 - **Vite** — Build tooling
-- **Vitest** — Test framework (12 test files across domain + state + components)
+- **Vitest** — Test framework (13 test files, 236 tests across domain + state + components)
 - **pnpm workspaces** — Monorepo
 - **Claude Agent SDK** — Multi-claude orchestration proving ground
 
